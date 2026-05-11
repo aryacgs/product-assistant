@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Dev Assistant</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{--bg:#FFFFFF;--bg2:#F7F6F3;--bg3:#F0EEE9;--border:#E5E4DF;--border2:#D4D2CB;--text:#1A1916;--text2:#5F5E5A;--text3:#9B9A95;--accent:#534AB7;--accent-bg:#EEF0FB;--radius:10px;--radius-sm:7px}
+
+body{background:#F0EEE9;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.app{width:860px;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);border:0.5px solid var(--border)}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg);border-bottom:0.5px solid var(--border);position:relative;z-index:10}
+.tb-logo{width:28px;height:28px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:transform .15s,opacity .15s}
+.tb-logo:hover{opacity:.85;transform:scale(1.05)}
+.tb-title{font-size:13px;font-weight:500;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-btn{padding:4px 10px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.tb-btn:hover{background:var(--bg2);color:var(--text)}
+.tb-btn.p{background:var(--text);color:var(--bg);border-color:var(--text)}
+.tb-btn.p:disabled{opacity:.35;cursor:default}
+.user-av{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#CECBF6;cursor:pointer;flex-shrink:0;position:relative;flex-shrink:0}
+.user-av:hover{opacity:.85}
+.online-dot{position:absolute;bottom:0;right:0;width:8px;height:8px;border-radius:50%;background:#1D9E75;border:1.5px solid var(--bg)}
+
+/* SIDEBAR */
+.proj-sidebar{position:absolute;top:0;left:0;bottom:0;width:280px;background:var(--bg);border-right:0.5px solid var(--border);z-index:80;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow:hidden;display:flex;flex-direction:column}
+.proj-sidebar.open{transform:translateX(0)}
+.ps-head{padding:14px 14px 10px;border-bottom:0.5px solid var(--border);flex-shrink:0}
+.ps-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ps-title{font-size:14px;font-weight:500;color:var(--text)}
+.ps-close{width:22px;height:22px;border-radius:6px;border:0.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3)}
+.ps-close:hover{background:var(--bg2)}
+.ps-search{width:100%;padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--bg2);color:var(--text);outline:none}
+.ps-body{flex:1;overflow-y:auto;padding:8px}
+.ps-section{font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;padding:8px 6px 3px}
+.proj-card{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:3px;border:0.5px solid transparent;transition:background .12s}
+.proj-card:hover{background:var(--bg2);border-color:var(--border)}
+.proj-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0}
+.proj-info{flex:1;min-width:0}
+.proj-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.status-pill{font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;flex-shrink:0}
+.s-draft{background:#F1EFE8;color:#5F5E5A}
+.s-pending{background:#FAEEDA;color:#854F0B}
+.s-approved{background:#EAF3DE;color:#3B6D11}
+.s-review{background:#E6F1FB;color:#185FA5}
+.ps-foot{padding:10px;border-top:0.5px solid var(--border);flex-shrink:0}
+.new-proj-btn{width:100%;padding:8px;border:0.5px dashed var(--border2);border-radius:var(--radius-sm);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.new-proj-btn:hover{background:var(--bg2);color:var(--text)}
+.sb-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);z-index:70;display:none}
+.sb-overlay.open{display:block;background:rgba(0,0,0,0.14)}
+
+/* PANELS */
+.panels{display:grid;grid-template-columns:186px 1fr 226px;height:622px;border-top:none;overflow:hidden;position:relative}
+
+/* LEFT */
+.left{border-right:0.5px solid var(--border);display:flex;flex-direction:column;background:var(--bg2)}
+.left-sec{padding:7px 12px 3px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+.add-src-btn{display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:10px 12px 4px;padding:7px 10px;border:0.5px dashed var(--border2);border-radius:var(--radius-sm);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;text-align:left}
+.add-src-btn:hover{background:var(--bg);color:var(--text)}
+.draft-item{display:flex;align-items:center;gap:7px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text3);border-left:2px solid transparent;transition:background .1s}
+.draft-item.ready{color:var(--text2)}
+.draft-item.ready:hover{background:var(--bg);color:var(--text)}
+.draft-item.active{background:var(--bg);color:var(--text);font-weight:500;border-left-color:var(--accent)}
+.dbadge{font-size:10px;padding:1px 6px;border-radius:20px;margin-left:auto;flex-shrink:0;display:none}
+.src-item{display:flex;align-items:center;gap:7px;padding:6px 12px;font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:fadeIn .3s ease}
+.src-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.empty-hint{padding:8px 12px;font-size:11px;color:var(--text3);font-style:italic}
+
+/* CENTER */
+.center{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.center-tool{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:0.5px solid var(--border);flex-shrink:0;min-height:40px}
+.doc-title{font-size:13px;font-weight:500;flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-btn{padding:4px 10px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:transparent;font-size:11px;color:var(--text2);cursor:pointer}
+.c-btn:hover{background:var(--bg2)}
+.center-body{flex:1;overflow-y:auto;display:flex;align-items:center;justify-content:center}
+.empty-center{text-align:center;padding:36px 20px}
+.empty-icon{width:42px;height:42px;border-radius:12px;background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.empty-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:5px}
+.empty-sub{font-size:12px;color:var(--text2);line-height:1.6}
+.doc-pad{padding:18px;width:100%;align-self:flex-start}
+.doc-content h2{font-size:15px;font-weight:500;margin:0 0 10px;color:var(--text)}
+.doc-content h3{font-size:13px;font-weight:500;margin:14px 0 5px;color:var(--text)}
+.doc-content p{margin:0 0 10px;font-size:13px;color:var(--text2);line-height:1.7}
+.doc-content ul{margin:0 0 10px;padding-left:18px;font-size:13px;color:var(--text2);line-height:1.7}
+.doc-content li{margin-bottom:3px}
+.dlabel{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;margin-bottom:14px}
+.center-foot{padding:7px 12px;border-top:0.5px solid var(--border);display:flex;align-items:center;flex-shrink:0}
+.foot-status{font-size:11px;color:var(--text3);flex:1}
+.gen-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:14px}
+.gen-fill{height:100%;background:var(--accent);border-radius:2px;animation:genprog 2.5s ease forwards}
+@keyframes genprog{from{width:0}to{width:100%}}
+.gen-line{height:11px;border-radius:4px;background:var(--bg2);margin-bottom:8px;animation:shimmer 1.2s infinite alternate}
+@keyframes shimmer{from{opacity:.4}to{opacity:.85}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ══ RIGHT PANEL ══ */
+.right{border-left:0.5px solid var(--border);display:flex;flex-direction:column;background:var(--bg2);overflow:hidden}
+
+/* TOP — feature menu */
+.right-top{flex-shrink:0;border-bottom:0.5px solid var(--border)}
+.rt-label{padding:8px 12px 5px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 8px 8px}
+.feat-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:8px 9px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--bg);cursor:pointer;transition:all .12s;text-align:left;position:relative;overflow:hidden}
+.feat-btn:hover{border-color:var(--border2)}
+.feat-btn.active{border-color:var(--accent);background:#F4F3FE}
+.feat-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.feat-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-bottom:1px}
+.feat-name{font-size:11px;font-weight:500;color:var(--text);line-height:1.2}
+.feat-desc{font-size:9.5px;color:var(--text3);line-height:1.3}
+
+/* BOTTOM — content */
+.right-bottom{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:var(--bg2)}
+.rb-header{padding:7px 12px 5px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;border-bottom:0.5px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.rb-content{flex:1;overflow-y:auto}
+
+/* Related docs */
+.dd-wrap{padding:8px;position:relative}
+.proj-sel-btn{display:flex;align-items:center;gap:7px;width:100%;padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-size:12px;color:var(--text);cursor:pointer;text-align:left}
+.proj-sel-btn:hover{background:var(--bg2)}
+.proj-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dd-box{position:absolute;top:calc(100% - 4px);left:8px;right:8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius-sm);z-index:60;overflow:hidden;display:none;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.dd-box.show{display:block}
+.dd-search{width:100%;padding:6px 10px;border:none;border-bottom:0.5px solid var(--border);font-size:12px;background:var(--bg);color:var(--text);outline:none}
+.dd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:12px;color:var(--text2);cursor:pointer}
+.dd-item:hover{background:var(--bg2);color:var(--text)}
+.ds{border-bottom:0.5px solid var(--border)}
+.ds-head{display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;font-size:11px;font-weight:500;color:var(--text)}
+.ds-head:hover{background:var(--bg)}
+.ds-chev{font-size:10px;color:var(--text3);margin-left:auto;transition:transform .15s}
+.ds-chev.open{transform:rotate(90deg)}
+.ds-rows{background:var(--bg)}
+.ds-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;font-size:11px;border-top:0.5px solid var(--border);cursor:default}
+.ds-row.cl{cursor:pointer}
+.ds-row.cl:hover{background:var(--bg2)}
+.ds-k{color:var(--text2)}
+.ds-v{font-weight:500;color:var(--text);font-size:11px}
+.ds-tag{font-size:10px;padding:1px 6px;border-radius:20px}
+.rb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 14px;text-align:center;font-size:11px;color:var(--text3);line-height:1.6;gap:6px}
+
+/* Mindmap */
+.mindmap-wrap{padding:8px;flex:1;overflow:hidden}
+.mindmap-wrap svg{width:100%;display:block}
+.mm-node{cursor:pointer}
+.mm-node rect,.mm-node ellipse{transition:opacity .1s}
+.mm-node:hover rect,.mm-node:hover ellipse{opacity:.8}
+
+/* Feedback */
+.feat-feedback-wrap{display:flex;flex-direction:column;height:100%}
+.feedback-list{flex:1;overflow-y:auto}
+.fb-item{padding:9px 12px;border-bottom:0.5px solid var(--border);cursor:default;transition:background .1s}
+.fb-item:hover{background:var(--bg)}
+.fb-top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.fb-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;flex-shrink:0}
+.fb-name{font-size:11px;font-weight:500;color:var(--text)}
+.fb-time{font-size:10px;color:var(--text3);margin-left:auto}
+.fb-text{font-size:11px;color:var(--text2);line-height:1.5}
+.fb-tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:20px;margin-top:4px}
+.fb-input{padding:8px;border-top:0.5px solid var(--border);display:flex;gap:6px;background:var(--bg2);flex-shrink:0}
+.fb-inp{flex:1;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:11px;background:var(--bg);color:var(--text);outline:none}
+.fb-inp:focus{border-color:var(--accent)}
+.fb-send{padding:6px 10px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-sm);font-size:11px;cursor:pointer}
+.fb-send:hover{opacity:.85}
+
+/* Version history */
+.vh-list{display:flex;flex-direction:column}
+.vh-item{display:flex;gap:10px;padding:9px 12px;border-bottom:0.5px solid var(--border);cursor:pointer}
+.vh-item:hover{background:var(--bg)}
+.vh-line{display:flex;flex-direction:column;align-items:center}
+.vh-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);flex-shrink:0;margin-top:3px}
+.vh-dot.cur{background:var(--accent)}
+.vh-stem{width:1px;background:var(--border);flex:1;margin-top:3px}
+.vh-info{flex:1;min-width:0}
+.vh-ver{font-size:11px;font-weight:500;color:var(--text)}
+.vh-who{font-size:10px;color:var(--text2);margin-top:1px}
+.vh-time{font-size:10px;color:var(--text3);margin-top:1px}
+.vh-badge{font-size:10px;padding:1px 6px;border-radius:20px;margin-top:3px;display:inline-block}
+
+/* GQL MODAL */
+.gql-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:300;align-items:center;justify-content:center}
+.gql-overlay.show{display:flex}
+.gql-modal{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);width:330px;max-height:420px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.gql-head{display:flex;align-items:center;padding:11px 14px;border-bottom:0.5px solid var(--border)}
+.gql-title{font-size:12px;font-weight:500;color:var(--text);flex:1}
+.gql-close{font-size:13px;cursor:pointer;color:var(--text3);padding:2px 6px}
+.gql-close:hover{color:var(--text)}
+.gql-tabs{display:flex;gap:4px;padding:7px 12px 0;border-bottom:0.5px solid var(--border)}
+.gtab{padding:3px 9px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;font-size:11px;cursor:pointer;border:0.5px solid transparent;color:var(--text2);background:transparent;margin-bottom:-0.5px}
+.gtab.active{border-color:var(--border);border-bottom-color:var(--bg);background:var(--bg);color:var(--text)}
+.gql-body{overflow-y:auto;padding:10px 14px;flex:1}
+.gql-code{background:var(--bg2);border-radius:var(--radius-sm);padding:10px;font-family:'SF Mono',Monaco,monospace;font-size:11px;color:var(--text);white-space:pre;overflow-x:auto;line-height:1.7;border:0.5px solid var(--border)}
+.gql-mrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px}
+.gql-mrow:last-child{border:none}
+.gql-mk{color:var(--text2)}
+.gql-mv{font-weight:500;color:var(--text)}
+.gql-foot{padding:9px 14px;border-top:0.5px solid var(--border)}
+.gql-ask{width:100%;padding:6px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:transparent;font-size:12px;cursor:pointer;color:var(--text);text-align:left}
+.gql-ask:hover{background:var(--bg2)}
+
+/* UPLOAD */
+.popup-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:200;align-items:center;justify-content:center}
+.popup-overlay.show{display:flex}
+.popup{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);width:300px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.popup-head{display:flex;align-items:center;padding:12px 14px;border-bottom:0.5px solid var(--border)}
+.popup-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.popup-close{font-size:13px;cursor:pointer;color:var(--text3);padding:2px 5px}
+.popup-body{padding:12px}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:22px 14px;text-align:center;cursor:pointer;transition:background .15s}
+.upload-zone:hover{background:var(--bg2)}
+.uz-icon{width:32px;height:32px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.uz-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
+.uz-sub{font-size:11px;color:var(--text2)}
+.popup-opts{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.popup-opt{display:flex;align-items:center;gap:9px;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2)}
+.popup-opt:hover{background:var(--bg2);color:var(--text);border-color:var(--border2)}
+.popup-uploading{display:none;text-align:center;padding:14px}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0 4px}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.prog-txt{font-size:11px;color:var(--text2)}
+
+/* UD */
+.ud{position:absolute;top:44px;right:14px;z-index:150;width:200px;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;display:none;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.ud.show{display:block}
+.ud-top{padding:11px 12px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:9px}
+.ud-av{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#CECBF6;flex-shrink:0}
+.ud-name{font-size:12px;font-weight:500;color:var(--text)}
+.ud-role{font-size:11px;color:var(--text2)}
+.ud-row{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:12px;color:var(--text2);cursor:pointer}
+.ud-row:hover{background:var(--bg2);color:var(--text)}
+.ud-div{height:0.5px;background:var(--border)}
+.ud-out{color:#A32D2D !important}
+.ud-out:hover{background:#FCEBEB !important}
+</style>
+</head>
+<body>
+<div style="position:relative;width:860px">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo" onclick="toggleSidebar()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2.5" stroke="#CECBF6" stroke-width="1"/><path d="M3.5 4.5h6M3.5 6.5h4M3.5 8.5h5" stroke="#CECBF6" stroke-width="1" stroke-linecap="round"/></svg>
+  </div>
+  <span class="tb-title" id="tb-title">Product Dev Assistant</span>
+  <button class="tb-btn">Share</button>
+  <button class="tb-btn">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Create new project
+  </button>
+  <button class="tb-btn p" id="submit-btn" disabled>Submit Final</button>
+  <div class="user-av" onclick="toggleUD()">AR<div class="online-dot"></div></div>
+  <div class="ud" id="ud">
+    <div class="ud-top">
+      <div class="ud-av">AR</div>
+      <div><div class="ud-name">Andi Rachmat</div><div class="ud-role">PM · Transfer</div></div>
+    </div>
+    <div class="ud-div"></div>
+    <div class="ud-row">Profile</div>
+    <div class="ud-row">Draft saya <span style="margin-left:auto;background:#E6F1FB;color:#185FA5;font-size:10px;padding:1px 5px;border-radius:20px">3</span></div>
+    <div class="ud-div"></div>
+    <div class="ud-row ud-out">Logout</div>
+  </div>
+</div>
+
+<div style="position:relative;overflow:hidden">
+<div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="proj-sidebar" id="proj-sidebar">
+  <div class="ps-head">
+    <div class="ps-top"><span class="ps-title">My Projects</span><button class="ps-close" onclick="toggleSidebar()">✕</button></div>
+    <input class="ps-search" placeholder="Cari project..." oninput="filterProjects(this.value)" id="ps-search">
+  </div>
+  <div class="ps-body" id="ps-body"></div>
+  <div class="ps-foot"><button class="new-proj-btn">＋ Create new project</button></div>
+</div>
+
+<!-- PANELS -->
+<div class="panels">
+
+  <!-- LEFT -->
+  <div class="left">
+    <button class="add-src-btn" onclick="openUpload()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.5v7M6 1.5L4 3.5M6 1.5l2 2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 10h9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+      Add source
+    </button>
+    <div class="left-sec">Generated Drafts</div>
+    <div class="draft-item" id="di-brd" onclick="switchDoc('brd')">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="flex-shrink:0"><rect x=".5" y=".5" width="10" height="10" rx="2" stroke="#9B9A95" stroke-width="1"/><path d="M2.5 3.5h6M2.5 5.5h4" stroke="#9B9A95" stroke-width="1" stroke-linecap="round"/></svg>
+      BRD Draft<span class="dbadge" id="badge-brd" style="background:#E6F1FB;color:#185FA5">BRD</span>
+    </div>
+    <div class="draft-item" id="di-arch" onclick="switchDoc('arch')">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="flex-shrink:0"><circle cx="5.5" cy="5.5" r="5" stroke="#9B9A95" stroke-width="1"/><path d="M3 5.5h5M5.5 3v5" stroke="#9B9A95" stroke-width="1" stroke-linecap="round"/></svg>
+      Architecture<span class="dbadge" id="badge-arch" style="background:#EAF3DE;color:#3B6D11">Arch</span>
+    </div>
+    <div class="draft-item" id="di-dfd" onclick="switchDoc('dfd')">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="flex-shrink:0"><path d="M1.5 5.5h8M5.5 1.5l4 4-4 4" stroke="#9B9A95" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      DFD Draft<span class="dbadge" id="badge-dfd" style="background:#FAEEDA;color:#854F0B">DFD</span>
+    </div>
+    <div class="left-sec" style="margin-top:6px">Sources</div>
+    <div class="empty-hint" id="src-empty">Belum ada source</div>
+    <div id="src-list"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="center-tool">
+      <div class="doc-title" id="ctitle">—</div>
+      <button class="c-btn" id="btn-edit" style="display:none">Edit</button>
+      <button class="c-btn" id="btn-comment" style="display:none">Comment</button>
+    </div>
+    <div class="center-body" id="center-body">
+      <div class="empty-center">
+        <div class="empty-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="#9B9A95" stroke-width="1"/><path d="M7 8h6M7 11h4" stroke="#9B9A95" stroke-width="1" stroke-linecap="round"/></svg></div>
+        <div class="empty-title">Belum ada draft</div>
+        <div class="empty-sub">Upload hasil meeting untuk generate BRD, Architecture, dan DFD otomatis</div>
+      </div>
+    </div>
+    <div class="center-foot"><span class="foot-status" id="foot-status">—</span></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+
+    <!-- TOP: feature buttons 2x2 -->
+    <div class="right-top">
+      <div class="rt-label">Features</div>
+      <div class="feature-grid">
+
+        <button class="feat-btn active" id="fb-related" onclick="switchFeature('related')">
+          <div class="feat-icon" style="background:#EEF0FB">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5h10M6.5 1.5l5 5-5 5" stroke="#534AB7" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="feat-name">Related Docs</span>
+          <span class="feat-desc">Cari dokumen terkait</span>
+        </button>
+
+        <button class="feat-btn" id="fb-mindmap" onclick="switchFeature('mindmap')">
+          <div class="feat-icon" style="background:#EAF3DE">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="2" fill="#1D9E75"/><circle cx="2" cy="3" r="1.2" fill="#1D9E75" opacity=".5"/><circle cx="11" cy="3" r="1.2" fill="#1D9E75" opacity=".5"/><circle cx="2" cy="10" r="1.2" fill="#1D9E75" opacity=".5"/><circle cx="11" cy="10" r="1.2" fill="#1D9E75" opacity=".5"/><path d="M4.7 5.3L3 4M8.3 5.3L10 4M4.7 7.7L3 9M8.3 7.7L10 9" stroke="#1D9E75" stroke-width=".8"/></svg>
+          </div>
+          <span class="feat-name">Mind Map</span>
+          <span class="feat-desc">Visualisasi topik</span>
+        </button>
+
+        <button class="feat-btn" id="fb-feedback" onclick="switchFeature('feedback')">
+          <div class="feat-icon" style="background:#FAEEDA">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 2.5h10v7.5H7.5l-3 2v-2H1.5V2.5z" stroke="#BA7517" stroke-width="1" stroke-linejoin="round" fill="none"/></svg>
+          </div>
+          <span class="feat-name">Feedback</span>
+          <span class="feat-desc">Review dari tim</span>
+        </button>
+
+        <button class="feat-btn" id="fb-history" onclick="switchFeature('history')">
+          <div class="feat-icon" style="background:#FCEBEB">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#A32D2D" stroke-width="1"/><path d="M6.5 3.5v3l2 1.5" stroke="#A32D2D" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="feat-name">Version History</span>
+          <span class="feat-desc">Riwayat perubahan</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM: content -->
+    <div class="right-bottom">
+      <div class="rb-header" id="rb-header">Related Docs</div>
+      <div class="rb-content" id="rb-content">
+
+        <!-- RELATED -->
+        <div id="feat-related">
+          <div class="dd-wrap">
+            <button class="proj-sel-btn" onclick="toggleDD()">
+              <span class="proj-dot" id="proj-dot" style="background:#D4D2CB"></span>
+              <span id="proj-label" style="color:#9B9A95;font-size:12px">Pilih project...</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:auto;flex-shrink:0"><path d="M2 4l3 3 3-3" stroke="#9B9A95" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="dd-box" id="dd-box">
+              <input class="dd-search" placeholder="Cari..." oninput="filterDD(this.value)" id="dd-search" autocomplete="off">
+              <div id="dd-items"></div>
+            </div>
+          </div>
+          <div id="related-sections">
+            <div class="rb-empty">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9.5" stroke="#D4D2CB" stroke-width="1"/><path d="M7 11h8M11 7v8" stroke="#D4D2CB" stroke-width="1" stroke-linecap="round"/></svg>
+              Pilih project untuk lihat detail
+            </div>
+          </div>
+        </div>
+
+        <!-- MINDMAP -->
+        <div id="feat-mindmap" style="display:none">
+          <div class="mindmap-wrap">
+            <svg viewBox="0 0 210 280" xmlns="http://www.w3.org/2000/svg">
+              <line x1="105" y1="80" x2="40" y2="38" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="170" y2="38" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="32" y2="122" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="178" y2="122" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="64" y2="165" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="152" y2="165" stroke="#D4D2CB" stroke-width="1"/>
+              <line x1="105" y1="80" x2="105" y2="218" stroke="#D4D2CB" stroke-width="1"/>
+              <g class="mm-node"><ellipse cx="105" cy="80" rx="40" ry="22" fill="#534AB7" stroke="#3C3489" stroke-width=".5"/><text x="105" y="77" text-anchor="middle" font-size="10" font-weight="500" fill="#CECBF6">Transfer</text><text x="105" y="90" text-anchor="middle" font-size="8.5" fill="#AFA9EC">Project Baru</text></g>
+              <g class="mm-node"><rect x="4" y="21" width="72" height="30" rx="6" fill="#E6F1FB" stroke="#85B7EB" stroke-width=".5"/><text x="40" y="34" text-anchor="middle" font-size="9.5" font-weight="500" fill="#0C447C">Bifast</text><text x="40" y="46" text-anchor="middle" font-size="8" fill="#185FA5">45 md · 120jt</text></g>
+              <g class="mm-node"><rect x="134" y="21" width="72" height="30" rx="6" fill="#EAF3DE" stroke="#97C459" stroke-width=".5"/><text x="170" y="34" text-anchor="middle" font-size="9.5" font-weight="500" fill="#27500A">Kliring</text><text x="170" y="46" text-anchor="middle" font-size="8" fill="#3B6D11">30 md · 80jt</text></g>
+              <g class="mm-node"><rect x="2" y="106" width="60" height="28" rx="6" fill="#FAEEDA" stroke="#EF9F27" stroke-width=".5"/><text x="32" y="118" text-anchor="middle" font-size="9" font-weight="500" fill="#633806">Regulasi BI</text><text x="32" y="129" text-anchor="middle" font-size="8" fill="#854F0B">PBI 22/2020</text></g>
+              <g class="mm-node"><rect x="148" y="106" width="60" height="28" rx="6" fill="#E1F5EE" stroke="#5DCAA5" stroke-width=".5"/><text x="178" y="118" text-anchor="middle" font-size="9" font-weight="500" fill="#085041">GraphQL</text><text x="178" y="129" text-anchor="middle" font-size="8" fill="#0F6E56">v3.2</text></g>
+              <g class="mm-node"><rect x="28" y="149" width="72" height="28" rx="6" fill="#FCEBEB" stroke="#F09595" stroke-width=".5"/><text x="64" y="161" text-anchor="middle" font-size="9" font-weight="500" fill="#791F1F">Fee Structure</text><text x="64" y="172" text-anchor="middle" font-size="8" fill="#A32D2D">Rp 2.500/trx</text></g>
+              <g class="mm-node"><rect x="116" y="149" width="72" height="28" rx="6" fill="#F4F3FE" stroke="#B8B4E8" stroke-width=".5"/><text x="152" y="161" text-anchor="middle" font-size="9" font-weight="500" fill="#3C3489">Team</text><text x="152" y="172" text-anchor="middle" font-size="8" fill="#534AB7">3 dev · 1 QA</text></g>
+              <g class="mm-node"><rect x="69" y="205" width="72" height="28" rx="6" fill="#FFF8E6" stroke="#F5C962" stroke-width=".5"/><text x="105" y="217" text-anchor="middle" font-size="9" font-weight="500" fill="#633806">Timeline</text><text x="105" y="228" text-anchor="middle" font-size="8" fill="#854F0B">Q4 2024</text></g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- FEEDBACK -->
+        <div id="feat-feedback" style="display:none" class="feat-feedback-wrap">
+          <div class="feedback-list">
+            <div class="fb-item">
+              <div class="fb-top"><div class="fb-av" style="background:#534AB7;color:#CECBF6">BS</div><span class="fb-name">Budi S.</span><span class="fb-time">2j lalu</span></div>
+              <div class="fb-text">Section scope perlu diperjelas — mencakup web banking juga atau mobile saja?</div>
+              <span class="fb-tag" style="background:#FAEEDA;color:#854F0B">Pertanyaan</span>
+            </div>
+            <div class="fb-item">
+              <div class="fb-top"><div class="fb-av" style="background:#1D9E75;color:#9FE1CB">RK</div><span class="fb-name">Rina K.</span><span class="fb-time">4j lalu</span></div>
+              <div class="fb-text">Estimasi mandays sudah sesuai dengan referensi project Kliring ✓</div>
+              <span class="fb-tag" style="background:#EAF3DE;color:#3B6D11">Approved</span>
+            </div>
+            <div class="fb-item">
+              <div class="fb-top"><div class="fb-av" style="background:#D85A30;color:#F5C4B3">LN</div><span class="fb-name">Lina N.</span><span class="fb-time">6j lalu</span></div>
+              <div class="fb-text">Perlu tambahkan section risk assessment & mitigation plan.</div>
+              <span class="fb-tag" style="background:#FCEBEB;color:#A32D2D">Action needed</span>
+            </div>
+            <div class="fb-item">
+              <div class="fb-top"><div class="fb-av" style="background:#BA7517;color:#FAC775">DW</div><span class="fb-name">Dani W.</span><span class="fb-time">1h lalu</span></div>
+              <div class="fb-text">Regulasi sudah merujuk ke PBI terbaru, good.</div>
+              <span class="fb-tag" style="background:#EAF3DE;color:#3B6D11">Approved</span>
+            </div>
+          </div>
+          <div class="fb-input">
+            <input class="fb-inp" placeholder="Tulis komentar...">
+            <button class="fb-send">Kirim</button>
+          </div>
+        </div>
+
+        <!-- VERSION HISTORY -->
+        <div id="feat-history" style="display:none">
+          <div class="vh-list">
+            <div class="vh-item">
+              <div class="vh-line"><div class="vh-dot cur"></div><div class="vh-stem"></div></div>
+              <div class="vh-info"><div class="vh-ver">v0.1 — Draft saat ini</div><div class="vh-who">Generated by AI</div><div class="vh-time">8 Mei 2026, 10.24</div><span class="vh-badge" style="background:#E6F1FB;color:#185FA5">Current</span></div>
+            </div>
+            <div class="vh-item">
+              <div class="vh-line"><div class="vh-dot"></div><div class="vh-stem"></div></div>
+              <div class="vh-info"><div class="vh-ver">v0.0 — Initial upload</div><div class="vh-who">Andi Rachmat</div><div class="vh-time">8 Mei 2026, 09.51</div><span class="vh-badge" style="background:#F1EFE8;color:#5F5E5A">Draft</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- end right -->
+
+</div><!-- end panels -->
+
+<!-- UPLOAD POPUP -->
+<div class="popup-overlay" id="upload-overlay" onclick="closeUpload(event)">
+  <div class="popup" onclick="event.stopPropagation()">
+    <div class="popup-head"><span class="popup-title">Add source</span><button class="popup-close" onclick="closeUpload()">✕</button></div>
+    <div class="popup-body">
+      <div class="upload-zone" onclick="simulateUpload()"><div class="uz-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V3M8 3L5 6M8 3l3 3" stroke="#5F5E5A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="#5F5E5A" stroke-width="1.2" stroke-linecap="round"/></svg></div><div class="uz-title">Drag & drop file</div><div class="uz-sub">atau klik untuk browse</div></div>
+      <div class="popup-opts">
+        <div class="popup-opt" onclick="simulateUpload()">📄 Upload PDF / DOCX</div>
+        <div class="popup-opt" onclick="simulateUpload()">📝 Upload TXT</div>
+        <div class="popup-opt" onclick="simulateUpload()">📋 Paste teks langsung</div>
+      </div>
+      <div class="popup-uploading" id="uploading-state">
+        <div style="font-size:12px;font-weight:500;color:#1A1916;margin-bottom:4px" id="upload-filename"></div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        <div class="prog-txt" id="prog-txt">Mengupload...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GQL MODAL -->
+<div class="gql-overlay" id="gql-overlay" onclick="closeGql(event)">
+  <div class="gql-modal" onclick="event.stopPropagation()">
+    <div class="gql-head"><span class="gql-title" id="gql-title"></span><button class="gql-close" onclick="closeGql()">✕</button></div>
+    <div class="gql-tabs"><button class="gtab active" onclick="switchGqlTab('schema',this)">Schema</button><button class="gtab" onclick="switchGqlTab('meta',this)">Detail</button></div>
+    <div class="gql-body"><div id="gtab-schema"><div class="gql-code" id="gql-code"></div></div><div id="gtab-meta" style="display:none"><div id="gql-meta"></div></div></div>
+    <div class="gql-foot"><button class="gql-ask" id="gql-ask">Tanya lebih lanjut ↗</button></div>
+  </div>
+</div>
+
+</div></div>
+
+<script>
+var sbOpen=false,udOpen=false,ddOpen=false,docReady=false,addedSrc=0,sectionOpen={};
+
+// FEATURES
+var features={related:'Related Docs',mindmap:'Mind Map',feedback:'Feedback',history:'Version History'};
+function switchFeature(f){
+  Object.keys(features).forEach(function(k){
+    document.getElementById('fb-'+k).classList.toggle('active',k===f);
+    var el=document.getElementById('feat-'+k);
+    el.style.display=k===f?(k==='feedback'?'flex':'block'):'none';
+    if(k==='feedback')el.style.flexDirection='column';
+  });
+  document.getElementById('rb-header').textContent=features[f];
+}
+
+// SIDEBAR
+var projectList=[
+  {id:'p1',name:'Transfer Bifast',squad:'Squad Transfer',status:'draft',color:'#534AB7',initials:'TB',docs:3},
+  {id:'p2',name:'Transfer Kliring',squad:'Squad Transfer',status:'approved',color:'#1D9E75',initials:'TK',docs:5},
+  {id:'p3',name:'Transfer RTGS',squad:'Squad Core',status:'approved',color:'#BA7517',initials:'TR',docs:4},
+  {id:'p4',name:'Onboarding KYC v2',squad:'Squad Identity',status:'pending',color:'#D85A30',initials:'OK',docs:2},
+  {id:'p5',name:'Notifikasi Real-time',squad:'Squad Platform',status:'review',color:'#185FA5',initials:'NR',docs:3},
+  {id:'p6',name:'Merchant QR Payment',squad:'Squad Payment',status:'approved',color:'#0F6E56',initials:'MQ',docs:6},
+];
+var statusMeta={draft:{label:'Draft',cls:'s-draft'},pending:{label:'Pending',cls:'s-pending'},approved:{label:'Approved',cls:'s-approved'},review:{label:'In Review',cls:'s-review'}};
+function renderSidebar(q){
+  var body=document.getElementById('ps-body'); body.innerHTML='';
+  var f=projectList.filter(function(p){return !q||p.name.toLowerCase().includes(q.toLowerCase())||p.squad.toLowerCase().includes(q.toLowerCase());});
+  var groups={draft:[],review:[],pending:[],approved:[]};
+  f.forEach(function(p){if(groups[p.status])groups[p.status].push(p);});
+  [['draft','Draft'],['review','In Review'],['pending','Pending'],['approved','Approved']].forEach(function(g){
+    var list=groups[g[0]]; if(!list||!list.length)return;
+    var sec=document.createElement('div'); sec.className='ps-section'; sec.textContent=g[1]; body.appendChild(sec);
+    list.forEach(function(p){
+      var card=document.createElement('div'); card.className='proj-card';
+      var sm=statusMeta[p.status];
+      card.innerHTML='<div class="proj-avatar" style="background:'+p.color+'22;color:'+p.color+'">'+p.initials+'</div><div class="proj-info"><div class="proj-name">'+p.name+'</div><div class="proj-meta">'+p.squad+' · '+p.docs+' docs</div></div><span class="status-pill '+sm.cls+'">'+sm.label+'</span>';
+      card.onclick=function(){document.getElementById('tb-title').textContent=p.name+' — Product Dev Assistant';toggleSidebar();};
+      body.appendChild(card);
+    });
+  });
+}
+function filterProjects(q){renderSidebar(q);}
+function toggleSidebar(){sbOpen=!sbOpen;document.getElementById('proj-sidebar').classList.toggle('open',sbOpen);document.getElementById('sb-overlay').classList.toggle('open',sbOpen);if(sbOpen){renderSidebar('');setTimeout(function(){document.getElementById('ps-search').focus();},260);}else{document.getElementById('ps-search').value='';}}
+
+// RELATED
+var relProjects={
+  bifast:{label:'Transfer Bifast',color:'#534AB7',sections:[
+    {id:'info',label:'Info project',rows:[{k:'Mandays',v:'45 hari'},{k:'Budget',v:'Rp 120 jt'},{k:'Resource',v:'3 dev · 1 BA · 1 QA'},{k:'Status',v:'In Planning',tag:{bg:'#E6F1FB',c:'#185FA5'}}]},
+    {id:'reg',label:'Regulasi',rows:[{k:'PBI BI-FAST',v:'No.22/23/2020 ↗',click:{title:'PBI BI-FAST 2020',schema:'# PBI No.22/23/PBI/2020\n\nLimit       : Rp 250.000.000/trx\nOperasional : 24 jam / 7 hari\nSettlement  : real-time < 25 dtk\nAvailability: min 99.9%',meta:[['Nomor','22/23/PBI/2020'],['Limit','Rp 250 jt/trx'],['Berlaku','1 Des 2021']]}},{k:'Fee',v:'Rp 2.500/trx'},{k:'Limit',v:'Rp 250 jt/trx'}]},
+    {id:'api',label:'API & Schema',rows:[{k:'transfer.gql',v:'v3.2 ↗',click:{title:'GraphQL transfer.graphql',schema:'type Mutation {\n  initiateTransfer(input: TransferInput!): TransferResult!\n}\n\ntype Query {\n  getTransferStatus(id: ID!): TransferStatus\n}\n\ninput TransferInput {\n  fromAccount: String!\n  toAccount:   String!\n  amount:      Float!\n  channel:     Channel!\n}\n\nenum Channel { BIFAST KLIRING RTGS }',meta:[['Versi','v3.2'],['Update','Mar 2024'],['Reusable','Ya']]}},{k:'notification.gql',v:'v2.0 ↗',click:{title:'GraphQL notification.graphql',schema:'type Subscription {\n  onTransferUpdate(transactionId: ID!): NotificationEvent!\n}\n\nenum NotifType { TRANSFER_SUCCESS TRANSFER_FAILED TRANSFER_PENDING }',meta:[['Versi','v2.0'],['Push','FCM + APNs']]}}]},
+    {id:'team',label:'Team & Timeline',rows:[{k:'Backend dev',v:'2 orang'},{k:'Frontend dev',v:'1 orang'},{k:'QA',v:'1 orang'},{k:'Go-live',v:'Q4 2024'}]}
+  ]},
+  kliring:{label:'Transfer Kliring',color:'#1D9E75',sections:[
+    {id:'info',label:'Info project',rows:[{k:'Mandays',v:'30 hari'},{k:'Budget',v:'Rp 80 jt'},{k:'Status',v:'Completed',tag:{bg:'#EAF3DE',c:'#3B6D11'}}]},
+    {id:'reg',label:'Regulasi',rows:[{k:'PBI SKNBI',v:'No.17/9/2015 ↗',click:{title:'PBI SKNBI 2015',schema:'# PBI No.17/9/PBI/2015\n\nLimit    : Rp 500.000.000/trx\nBatch    : 8 siklus/hari\nJam ops  : 06.00–16.30 WIB',meta:[['Nomor','17/9/PBI/2015'],['Limit','Rp 500 jt/trx']]}},{k:'Fee',v:'Rp 2.900/trx'}]},
+    {id:'api',label:'API & Schema',rows:[{k:'kliring.gql',v:'v1.4 ↗',click:{title:'GraphQL kliring.graphql',schema:'type Mutation {\n  initiateKliring(input: KliringInput!): KliringResult!\n}\n\ninput KliringInput {\n  fromAccount: String!\n  toAccount:   String!\n  amount:      Float!\n}',meta:[['Versi','v1.4'],['Status','Stable']]}}]}
+  ]},
+  rtgs:{label:'Transfer RTGS',color:'#BA7517',sections:[
+    {id:'info',label:'Info project',rows:[{k:'Mandays',v:'20 hari'},{k:'Budget',v:'Rp 55 jt'},{k:'Status',v:'Live',tag:{bg:'#EAF3DE',c:'#3B6D11'}}]},
+    {id:'reg',label:'Regulasi',rows:[{k:'Min amount',v:'Rp 100 jt/trx'},{k:'Fee',v:'Rp 25.000/trx'}]},
+    {id:'api',label:'API & Schema',rows:[{k:'rtgs.gql',v:'v2.1 ↗',click:{title:'GraphQL rtgs.graphql',schema:'type Mutation {\n  initiateRTGS(input: RTGSInput!): RTGSResult!\n}\n\ninput RTGSInput {\n  fromAccount: String!\n  toAccount:   String!\n  amount:      Float!\n  purpose:     String!\n}',meta:[['Versi','v2.1'],['Min','Rp 100 jt']]}}]}
+  ]}
+};
+var allDD=Object.keys(relProjects).map(function(k){return{key:k,label:relProjects[k].label,color:relProjects[k].color};});
+function renderDD(q){var el=document.getElementById('dd-items');el.innerHTML='';var f=allDD.filter(function(p){return !q||p.label.toLowerCase().includes(q.toLowerCase());});if(!f.length){el.innerHTML='<div style="padding:8px 10px;font-size:12px;color:#9B9A95;font-style:italic">Tidak ditemukan</div>';return;}f.forEach(function(p){var d=document.createElement('div');d.className='dd-item';d.innerHTML='<span class="proj-dot" style="background:'+p.color+'"></span>'+p.label;d.onclick=function(){selectRelProject(p.key);};el.appendChild(d);});}
+function filterDD(q){renderDD(q);}
+function toggleDD(){ddOpen=!ddOpen;document.getElementById('dd-box').classList.toggle('show',ddOpen);if(ddOpen){renderDD('');setTimeout(function(){document.getElementById('dd-search').focus();},40);}}
+function selectRelProject(key){
+  var p=relProjects[key];
+  var lbl=document.getElementById('proj-label');
+  lbl.textContent=p.label;lbl.style.color='#1A1916';lbl.style.fontWeight='500';
+  document.getElementById('proj-dot').style.background=p.color;
+  document.getElementById('dd-box').classList.remove('show');ddOpen=false;
+  document.getElementById('dd-search').value='';
+  sectionOpen={};renderRelSections(key);
+}
+function renderRelSections(key){
+  var p=relProjects[key];var rs=document.getElementById('related-sections');rs.innerHTML='';
+  p.sections.forEach(function(sec){
+    var sk=key+'-'+sec.id;var isOpen=sectionOpen[sk]!==false;
+    var wrap=document.createElement('div');wrap.className='ds';
+    var head=document.createElement('div');head.className='ds-head';
+    head.innerHTML='<span style="width:6px;height:6px;border-radius:50%;background:'+p.color+';display:inline-block;flex-shrink:0"></span><span style="margin-left:6px">'+sec.label+'</span><span class="ds-chev'+(isOpen?' open':'')+'">›</span>';
+    var body=document.createElement('div');body.className='ds-rows';body.style.display=isOpen?'block':'none';
+    sec.rows.forEach(function(row){
+      var r=document.createElement('div');r.className='ds-row'+(row.click?' cl':'');
+      var val=row.tag?'<span class="ds-tag" style="background:'+row.tag.bg+';color:'+row.tag.c+'">'+row.v+'</span>':'<span class="ds-v">'+row.v+'</span>';
+      r.innerHTML='<span class="ds-k">'+row.k+'</span>'+val;
+      if(row.click){r.onclick=function(){openGql(row.click);};}
+      body.appendChild(r);
+    });
+    head.onclick=function(){var o=body.style.display!=='none';body.style.display=o?'none':'block';sectionOpen[sk]=!o;head.querySelector('.ds-chev').className='ds-chev'+(!o?' open':'');};
+    wrap.appendChild(head);wrap.appendChild(body);rs.appendChild(wrap);
+  });
+}
+
+// DOCS
+var docs={
+  brd:{title:'BRD — Transfer Bifast',lbg:'#E6F1FB',lc:'#185FA5',html:'<h2>Business Requirements Document</h2><h3>1. Latar belakang</h3><p>Pengembangan fitur Transfer Bifast mengakomodasi kebutuhan nasabah terhadap layanan transfer real-time antar bank dengan settlement di bawah 25 detik sesuai standar Bank Indonesia.</p><h3>2. Tujuan</h3><ul><li>Layanan BI-FAST 24/7</li><li>Limit hingga Rp 250.000.000/trx</li><li>Fee: Rp 2.500/trx</li><li>Integrasi core banking existing</li></ul><h3>3. Estimasi</h3><p>Mandays: 45 hari · Budget: Rp 120 jt · Resource: 3 dev, 1 BA, 1 QA</p>'},
+  arch:{title:'Architecture — Transfer Bifast',lbg:'#EAF3DE',lc:'#3B6D11',html:'<h2>System Architecture</h2><h3>Komponen</h3><ul><li>API Gateway — auth, rate limiting</li><li>Transfer Service — business logic</li><li>BI-FAST Connector — integrasi eksternal</li><li>Notification Service — push, SMS</li><li>Audit Log — compliance</li></ul><h3>Stack</h3><p>Java Spring Boot · GraphQL · PostgreSQL · Kafka · Redis · K8s</p>'},
+  dfd:{title:'DFD — Transfer Bifast',lbg:'#FAEEDA',lc:'#854F0B',html:'<h2>Data Flow Diagram</h2><h3>Level 0</h3><p>Nasabah → Mobile App → Transfer System → BI-FAST Hub → Core Banking</p><h3>Level 1</h3><ul><li>P1: Input & validasi</li><li>P2: Otorisasi</li><li>P3: Eksekusi BI-FAST</li><li>P4: Update saldo & notifikasi</li><li>P5: Audit log</li></ul>'}
+};
+function switchDoc(t){
+  if(!docReady)return;
+  ['brd','arch','dfd'].forEach(function(x){document.getElementById('di-'+x).classList.toggle('active',x===t);});
+  document.getElementById('ctitle').textContent=docs[t].title;
+  document.getElementById('foot-status').textContent='Draft — belum disubmit';
+  var cb=document.getElementById('center-body');
+  cb.style.alignItems='flex-start';cb.style.justifyContent='flex-start';
+  cb.innerHTML='<div class="doc-pad"><div class="doc-content"><span class="dlabel" style="background:'+docs[t].lbg+';color:'+docs[t].lc+'">Draft v0.1 — Generated</span>'+docs[t].html+'</div></div>';
+}
+
+// UPLOAD
+function openUpload(){document.getElementById('upload-overlay').classList.add('show');document.getElementById('uploading-state').style.display='none';document.querySelector('.upload-zone').style.display='block';document.querySelectorAll('.popup-opt').forEach(function(e){e.style.display='flex';});}
+function closeUpload(e){if(!e||e.target===document.getElementById('upload-overlay'))document.getElementById('upload-overlay').classList.remove('show');}
+function simulateUpload(){
+  var fname=addedSrc===0?'meeting-bifast-240508.pdf':'notulen-kliring-ref.pdf';
+  document.querySelector('.upload-zone').style.display='none';
+  document.querySelectorAll('.popup-opt').forEach(function(e){e.style.display='none';});
+  document.getElementById('uploading-state').style.display='block';
+  document.getElementById('upload-filename').textContent=fname;
+  var pf=document.getElementById('prog-fill'),pt=document.getElementById('prog-txt');
+  pf.style.width='0%';
+  var steps=[{w:'35%',t:'Mengupload...'},{w:'70%',t:'Memproses dokumen...'},{w:'90%',t:'Generating drafts...'},{w:'100%',t:'Selesai!'}];
+  var i=0;
+  function tick(){if(i<steps.length){pf.style.width=steps[i].w;pt.textContent=steps[i].t;i++;setTimeout(tick,500);}else{setTimeout(function(){closeUpload();addSrcItem(fname);addedSrc++;if(!docReady)generateDrafts();},300);}}
+  setTimeout(tick,200);
+}
+function addSrcItem(fname){
+  document.getElementById('src-empty').style.display='none';
+  var colors=['#534AB7','#1D9E75'];
+  var d=document.createElement('div');d.className='src-item';
+  d.innerHTML='<span class="src-dot" style="background:'+colors[addedSrc]+'"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+fname+'</span>';
+  document.getElementById('src-list').appendChild(d);
+}
+function generateDrafts(){
+  var cb=document.getElementById('center-body');
+  cb.style.alignItems='flex-start';cb.style.justifyContent='flex-start';
+  cb.innerHTML='<div class="doc-pad"><div class="gen-bar"><div class="gen-fill"></div></div><div style="font-size:12px;color:#5F5E5A;margin-bottom:12px">Generating BRD, Architecture, DFD...</div>'+['72%','54%','88%','46%','66%'].map(function(w){return '<div class="gen-line" style="width:'+w+'"></div>';}).join('')+'</div>';
+  document.getElementById('ctitle').textContent='Generating...';
+  setTimeout(function(){
+    docReady=true;
+    ['brd','arch','dfd'].forEach(function(t){document.getElementById('di-'+t).classList.add('ready');document.getElementById('badge-'+t).style.display='inline-block';});
+    document.getElementById('submit-btn').disabled=false;
+    document.getElementById('btn-edit').style.display='';
+    document.getElementById('btn-comment').style.display='';
+    switchDoc('brd');
+  },2600);
+}
+
+// GQL
+function openGql(d){
+  document.getElementById('gql-title').textContent=d.title;
+  document.getElementById('gql-code').textContent=d.schema;
+  var m='';if(d.meta)d.meta.forEach(function(r){m+='<div class="gql-mrow"><span class="gql-mk">'+r[0]+'</span><span class="gql-mv">'+r[1]+'</span></div>';});
+  document.getElementById('gql-meta').innerHTML=m;
+  document.getElementById('gql-ask').onclick=function(){alert('Akan tanya AI tentang: '+d.title);closeGql();};
+  switchGqlTab('schema',document.querySelector('.gtab'));
+  document.getElementById('gql-overlay').classList.add('show');
+}
+function closeGql(e){if(!e||e.target===document.getElementById('gql-overlay'))document.getElementById('gql-overlay').classList.remove('show');}
+function switchGqlTab(tab,btn){document.querySelectorAll('.gtab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.getElementById('gtab-schema').style.display=tab==='schema'?'block':'none';document.getElementById('gtab-meta').style.display=tab==='meta'?'block':'none';}
+
+function toggleUD(){udOpen=!udOpen;document.getElementById('ud').classList.toggle('show',udOpen);}
+document.addEventListener('click',function(e){
+  if(udOpen&&!e.target.closest('.user-av')&&!e.target.closest('.ud')){udOpen=false;document.getElementById('ud').classList.remove('show');}
+  if(ddOpen&&!e.target.closest('.proj-sel-btn')&&!e.target.closest('.dd-box')){ddOpen=false;document.getElementById('dd-box').classList.remove('show');}
+});
+
+renderDD('');
+</script>
+</body>
+</html>
