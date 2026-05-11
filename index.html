@@ -414,6 +414,8 @@ var curProj=null,curFeat='info';
 var DB={projects:[],reg:{},api:{},team:{}};
 
 function parseCSV(txt){
+  // strip BOM
+  txt=txt.replace(/^\uFEFF/,'');
   var rows=[],row=[],cell='',inQ=false;
   for(var i=0;i<txt.length;i++){
     var c=txt[i];
@@ -424,8 +426,16 @@ function parseCSV(txt){
   }
   if(cell||row.length){row.push(cell.trim());rows.push(row);}
   if(!rows.length)return[];
-  var hdrs=rows[0];
-  return rows.slice(1).filter(function(r){return r.some(function(v){return v;});}).map(function(r){var o={};hdrs.forEach(function(h,i){o[h]=r[i]||'';});return o;});
+  // clean headers: strip BOM, quotes, invisible chars
+  var hdrs=rows[0].map(function(h){return h.replace(/["\uFEFF\u200B\u00A0]/g,'').trim();});
+  return rows.slice(1).filter(function(r){return r.some(function(v){return v;});}).map(function(r){
+    var o={};
+    hdrs.forEach(function(h,i){
+      var v=(r[i]||'').trim().replace(/^"|"$/g,'');
+      o[h]=v;
+    });
+    return o;
+  });
 }
 
 function fetchSheet(name){return fetch(SHEET+'&sheet='+encodeURIComponent(name)).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(parseCSV);}
@@ -436,6 +446,8 @@ function loadData(manual){
   Promise.all([fetchSheet('Projects'),fetchSheet('Regulasi'),fetchSheet('API_Schema'),fetchSheet('Team_Timeline')])
   .then(function(r){
     DB.projects=r[0];
+    // debug: log first project to console
+    if(r[0].length>0){console.log('Headers found:',Object.keys(r[0][0]));console.log('First project:',r[0][0]);}
     DB.reg={};r[1].forEach(function(x){DB.reg[x.project_id]=x;});
     DB.api={};r[2].forEach(function(x){if(!DB.api[x.project_id])DB.api[x.project_id]=[];DB.api[x.project_id].push(x);});
     DB.team={};r[3].forEach(function(x){if(!DB.team[x.project_id])DB.team[x.project_id]=[];DB.team[x.project_id].push(x);});
