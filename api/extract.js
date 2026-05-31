@@ -3,10 +3,11 @@
 
 export const config = { maxDuration: 60 };
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-const GEMINI_KEY   = process.env.GEMINI_API_KEY;
-const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const SUPABASE_URL  = process.env.SUPABASE_URL;
+const SUPABASE_KEY  = process.env.SUPABASE_ANON_KEY;
+const GEMINI_KEY    = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL  = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_URL    = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const PROMPT = `Kamu adalah AI assistant untuk tim Product Development di perusahaan perbankan Indonesia.
 
@@ -74,6 +75,7 @@ Aturan penting:
 - initials: 2 huruf kapital dari nama project
 - Jika info tidak ada, gunakan string kosong ""
 - badges: pisahkan dengan | (pipe)
+- Kembalikan HANYA JSON, tanpa teks lain apapun
 
 DOKUMEN MEETING NOTES:
 `;
@@ -102,17 +104,22 @@ export default async function handler(req, res) {
         generationConfig: {
           temperature: 0.1,
           maxOutputTokens: 4096,
+          responseMimeType: 'application/json',
         }
       })
     });
 
     if (!geminiRes.ok) {
       const err = await geminiRes.text();
-      throw new Error(`Gemini API error ${geminiRes.status}: ${err.substring(0, 200)}`);
+      throw new Error(`Gemini API error ${geminiRes.status}: ${err.substring(0, 300)}`);
     }
 
     const geminiData = await geminiRes.json();
     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!rawText) {
+      throw new Error('Gemini tidak mengembalikan respons. Coba lagi.');
+    }
 
     // ── 2. Parse JSON ───────────────────────────────────
     let extracted;
@@ -124,6 +131,10 @@ export default async function handler(req, res) {
       extracted = JSON.parse(clean);
     } catch (e) {
       throw new Error(`Gagal parse JSON dari AI: ${rawText.substring(0, 300)}`);
+    }
+
+    if (!extracted.project?.project_id) {
+      throw new Error('AI tidak berhasil mengidentifikasi project dari dokumen ini');
     }
 
     // ── 3. Save ke Supabase ─────────────────────────────
@@ -171,6 +182,9 @@ async function sbUpsert(table, data, conflictCol) {
     },
     body: JSON.stringify(data)
   });
-  if (!r.ok) throw new Error(`Supabase ${table}: ${(await r.text()).substring(0,200)}`);
+  if (!r.ok) {
+    const errText = await r.text();
+    throw new Error(`Supabase ${table} error: ${errText.substring(0, 200)}`);
+  }
   return r.json();
 }
