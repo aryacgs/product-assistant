@@ -1,158 +1,148 @@
 // api/extract.js — Vercel Serverless Function
-// Terima file upload → FreeModel AI extract → save ke Supabase
+// Terima teks → Gemini AI extract → save ke Supabase
 
 export const config = { maxDuration: 60 };
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-const FREEMODEL_KEY = process.env.FREEMODEL_API_KEY;
-const FREEMODEL_URL = 'https://cc.freemodel.dev';
+const GEMINI_KEY   = process.env.GEMINI_API_KEY;
+const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
-const EXTRACT_PROMPT = `Kamu adalah AI assistant untuk tim Product Development di perusahaan perbankan Indonesia.
+const PROMPT = `Kamu adalah AI assistant untuk tim Product Development di perusahaan perbankan Indonesia.
 
-Baca dokumen meeting notes berikut dan extract informasi ke dalam format JSON yang tepat.
+Baca dokumen meeting notes berikut dan extract informasi ke dalam format JSON.
 
-Format output JSON yang WAJIB diikuti:
+Format JSON yang WAJIB diikuti (kembalikan HANYA JSON valid, tanpa markdown, tanpa penjelasan):
 {
   "project": {
-    "project_id": "string lowercase tanpa spasi (contoh: transfer_bifast)",
+    "project_id": "lowercase_tanpa_spasi_gunakan_underscore",
     "project_name": "Nama lengkap project",
     "squad": "Nama squad/tim",
-    "color_hex": "#RRGGBB (pilih warna yang sesuai karakter project)",
-    "initials": "2 huruf inisial",
-    "status": "draft|pending|review|approved",
-    "go_live": "Target tanggal atau kuartal go-live",
+    "color_hex": "#534AB7",
+    "initials": "XX",
+    "status": "draft",
+    "go_live": "Q3 2026",
     "mandays": 0,
     "budget_idr": 0,
     "resource_summary": "X dev · X BA · X QA",
-    "note_info": "Insight penting tentang project ini"
+    "note_info": "Insight penting tentang project"
   },
   "regulasi": {
-    "project_id": "sama dengan project.project_id",
-    "dasar_hukum": "Nama regulasi/PBI",
+    "project_id": "sama_dengan_project_id",
+    "dasar_hukum": "PBI No.XX",
     "fee_per_trx": "Rp X.XXX",
     "limit_per_trx": "Rp X.XXX.XXX",
-    "operasional": "jam operasional",
-    "settlement": "mekanisme settlement",
-    "availability": "SLA availability",
-    "enkripsi": "jenis enkripsi",
+    "operasional": "24 jam / 7 hari",
+    "settlement": "Real-time",
+    "availability": "Min 99.9%",
+    "enkripsi": "TLS 1.3",
     "badges": "Tag1|Tag2|Tag3",
-    "note_reg": "Catatan penting tentang regulasi"
+    "note_reg": "Catatan regulasi"
   },
   "apis": [
     {
-      "project_id": "sama dengan project.project_id",
-      "api_name": "nama endpoint atau file gql",
-      "version": "vX.X",
-      "status": "Active|Stable|Deprecated",
-      "clickable": "yes|no",
-      "gql_title": "Judul untuk modal schema",
-      "gql_schema": "Schema GraphQL atau deskripsi endpoint",
-      "gql_meta_keys": "Key1|Key2|Key3",
-      "gql_meta_vals": "Val1|Val2|Val3",
-      "badges": "Tag1|Tag2",
-      "note_api": "Catatan tentang API ini"
+      "project_id": "sama_dengan_project_id",
+      "api_name": "nama.gql",
+      "version": "v1.0",
+      "status": "Active",
+      "clickable": "yes",
+      "gql_title": "Judul schema",
+      "gql_schema": "type Query { ... }",
+      "gql_meta_keys": "Versi|Status",
+      "gql_meta_vals": "v1.0|Active",
+      "badges": "GraphQL|Kafka",
+      "note_api": "Catatan API"
     }
   ],
   "team": [
     {
-      "project_id": "sama dengan project.project_id",
-      "role": "Backend dev|Frontend dev|QA Engineer|Business Analyst|Lead",
-      "count": "X",
+      "project_id": "sama_dengan_project_id",
+      "role": "Backend dev",
+      "count": "2",
       "name": "Nama jika ada, atau -",
-      "sprint_duration": "X minggu",
-      "go_live": "tanggal/kuartal",
-      "note_team": "Catatan tentang tim (isi di baris pertama saja)"
+      "sprint_duration": "2 minggu",
+      "go_live": "Q3 2026",
+      "note_team": "Catatan tim (isi di baris pertama saja)"
     }
   ]
 }
 
-Jika informasi tidak ada dalam dokumen, gunakan nilai default yang masuk akal atau string kosong.
-Untuk budget_idr dan mandays, gunakan angka bulat (integer), bukan string.
-Untuk project_id, buat dari nama project: lowercase, replace spasi dengan underscore.
-Kembalikan HANYA JSON valid, tanpa penjelasan tambahan, tanpa markdown code block.`;
+Aturan penting:
+- project_id: lowercase, spasi jadi underscore, contoh: transfer_virtual_account
+- mandays dan budget_idr: angka integer saja (tanpa Rp, tanpa titik)
+- color_hex: pilih warna sesuai karakter project (#534AB7 ungu, #1D9E75 hijau, #BA7517 oranye, #D85A30 merah, #185FA5 biru)
+- initials: 2 huruf kapital dari nama project
+- Jika info tidak ada, gunakan string kosong ""
+- badges: pisahkan dengan | (pipe)
+
+DOKUMEN MEETING NOTES:
+`;
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { text, filename } = req.body;
-
-    if (!text || text.trim().length < 10) {
-      return res.status(400).json({ error: 'Teks dokumen terlalu pendek atau kosong' });
+    if (!text || text.trim().length < 20) {
+      return res.status(400).json({ error: 'Teks terlalu pendek' });
     }
 
-    // ── 1. Call FreeModel AI ──────────────────────────
-    const aiRes = await fetch(`${FREEMODEL_URL}/v1/messages`, {
+    // ── 1. Call Gemini ──────────────────────────────────
+    const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': FREEMODEL_KEY,
-        'anthropic-version': '2023-06-01',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-t0',
-        max_tokens: 4096,
-        messages: [
-          {
-            role: 'user',
-            content: `${EXTRACT_PROMPT}\n\n---\nDOKUMEN MEETING NOTES:\n${text.substring(0, 8000)}`
-          }
-        ]
+        contents: [{
+          parts: [{ text: PROMPT + text.substring(0, 10000) }]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 4096,
+        }
       })
     });
 
-    if (!aiRes.ok) {
-      const err = await aiRes.text();
-      throw new Error(`FreeModel API error: ${err}`);
+    if (!geminiRes.ok) {
+      const err = await geminiRes.text();
+      throw new Error(`Gemini API error ${geminiRes.status}: ${err.substring(0, 200)}`);
     }
 
-    const aiData = await aiRes.json();
-    const rawText = aiData.content?.[0]?.text || '';
+    const geminiData = await geminiRes.json();
+    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // ── 2. Parse JSON ────────────────────────────────
+    // ── 2. Parse JSON ───────────────────────────────────
     let extracted;
     try {
-      const clean = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const clean = rawText
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
       extracted = JSON.parse(clean);
     } catch (e) {
-      throw new Error(`Gagal parse JSON dari AI: ${rawText.substring(0, 200)}`);
+      throw new Error(`Gagal parse JSON dari AI: ${rawText.substring(0, 300)}`);
     }
 
-    // ── 3. Save ke Supabase ──────────────────────────
+    // ── 3. Save ke Supabase ─────────────────────────────
     const saved = { project: null, regulasi: null, apis: [], team: [] };
 
-    // Upsert project
     if (extracted.project?.project_id) {
-      const r = await supabaseUpsert('projects', extracted.project, 'project_id');
-      saved.project = r;
+      saved.project = await sbUpsert('projects', extracted.project, 'project_id');
     }
-
-    // Upsert regulasi
     if (extracted.regulasi?.project_id) {
-      const r = await supabaseUpsert('regulasi', extracted.regulasi, 'project_id');
-      saved.regulasi = r;
+      saved.regulasi = await sbUpsert('regulasi', extracted.regulasi, 'project_id');
     }
-
-    // Upsert APIs
     for (const api of (extracted.apis || [])) {
       if (api.project_id && api.api_name) {
-        const r = await supabaseUpsert('api_schema', api, 'project_id,api_name');
-        saved.apis.push(r);
+        saved.apis.push(await sbUpsert('api_schema', api, 'project_id,api_name'));
       }
     }
-
-    // Upsert team
-    for (const member of (extracted.team || [])) {
-      if (member.project_id && member.role) {
-        const r = await supabaseUpsert('team_timeline', member, 'project_id,role');
-        saved.team.push(r);
+    for (const t of (extracted.team || [])) {
+      if (t.project_id && t.role) {
+        saved.team.push(await sbUpsert('team_timeline', t, 'project_id,role'));
       }
     }
 
@@ -165,14 +155,13 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('Extract error:', err);
+    console.error('Extract error:', err.message);
     return res.status(500).json({ ok: false, error: err.message });
   }
 }
 
-async function supabaseUpsert(table, data, conflictCol) {
-  const url = `${SUPABASE_URL}/rest/v1/${table}`;
-  const r = await fetch(`${url}?on_conflict=${conflictCol}`, {
+async function sbUpsert(table, data, conflictCol) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflictCol}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,9 +171,6 @@ async function supabaseUpsert(table, data, conflictCol) {
     },
     body: JSON.stringify(data)
   });
-  if (!r.ok) {
-    const e = await r.text();
-    throw new Error(`Supabase ${table} error: ${e}`);
-  }
+  if (!r.ok) throw new Error(`Supabase ${table}: ${(await r.text()).substring(0,200)}`);
   return r.json();
 }
