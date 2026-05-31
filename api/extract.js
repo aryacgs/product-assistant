@@ -6,7 +6,7 @@ export const config = { maxDuration: 60 };
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 const GEMINI_KEY   = process.env.GEMINI_API_KEY;
-const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 const PROMPT = `Kamu adalah AI assistant untuk tim Product Development di perusahaan perbankan Indonesia.
 
