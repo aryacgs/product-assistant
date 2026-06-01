@@ -1,76 +1,78 @@
 // api/extract.js — Vercel Serverless Function
-// Terima teks → OpenRouter AI extract → save ke Supabase
+// OpenRouter → Supabase
 
 export const config = { maxDuration: 60 };
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-const OR_KEY       = process.env.OPENROUTER_API_KEY;
-const OR_MODEL     = process.env.AI_MODEL || 'google/gemini-2.0-flash-exp:free';
+const OR_KEY      = process.env.OPENROUTER_API_KEY;
+const OR_MODEL    = process.env.AI_MODEL || 'meta-llama/llama-3.3-70b-instruct:free';
 
-const PROMPT = `Kamu adalah AI assistant untuk tim Product Development di perusahaan perbankan Indonesia.
+const PROMPT = `Kamu adalah AI assistant untuk tim Product Development perbankan Indonesia.
+Extract data dari meeting notes berikut ke JSON.
+KEMBALIKAN HANYA JSON VALID, tidak ada teks lain, tidak ada markdown.
 
-Baca dokumen meeting notes berikut dan extract informasi ke dalam format JSON.
-
-Kembalikan HANYA JSON valid berikut, tanpa markdown, tanpa penjelasan apapun:
+Format JSON:
 {
   "project": {
-    "project_id": "lowercase_underscore_contoh_transfer_va",
-    "project_name": "Nama lengkap project",
-    "squad": "Nama squad",
+    "project_id": "lowercase_underscore",
+    "project_name": "Nama Project",
+    "squad": "Nama Squad",
     "color_hex": "#534AB7",
     "initials": "XX",
     "status": "draft",
-    "go_live": "Q3 2026",
+    "go_live": "",
     "mandays": 0,
     "budget_idr": 0,
-    "resource_summary": "2 dev · 1 BA · 1 QA",
-    "note_info": "Insight penting"
+    "resource_summary": "2 dev · 1 BA",
+    "note_info": ""
   },
   "regulasi": {
-    "project_id": "sama_dengan_atas",
-    "dasar_hukum": "PBI No.XX",
-    "fee_per_trx": "Rp X.XXX",
-    "limit_per_trx": "Rp X.XXX.XXX",
-    "operasional": "24 jam / 7 hari",
-    "settlement": "Real-time",
-    "availability": "Min 99.9%",
-    "enkripsi": "TLS 1.3",
-    "badges": "Tag1|Tag2|Tag3",
-    "note_reg": "Catatan regulasi"
+    "project_id": "sama_dengan_project_id",
+    "dasar_hukum": "",
+    "fee_per_trx": "",
+    "limit_per_trx": "",
+    "operasional": "",
+    "settlement": "",
+    "availability": "",
+    "enkripsi": "",
+    "badges": "Tag1|Tag2",
+    "note_reg": ""
   },
   "apis": [{
-    "project_id": "sama_dengan_atas",
+    "project_id": "sama_dengan_project_id",
     "api_name": "nama.gql",
     "version": "v1.0",
     "status": "Active",
     "clickable": "yes",
-    "gql_title": "Judul schema",
-    "gql_schema": "type Mutation { ... }",
-    "gql_meta_keys": "Versi|Status",
-    "gql_meta_vals": "v1.0|Active",
-    "badges": "GraphQL|Kafka",
-    "note_api": "Catatan API"
+    "gql_title": "",
+    "gql_schema": "",
+    "gql_meta_keys": "",
+    "gql_meta_vals": "",
+    "badges": "",
+    "note_api": ""
   }],
   "team": [{
-    "project_id": "sama_dengan_atas",
+    "project_id": "sama_dengan_project_id",
     "role": "Backend dev",
-    "count": "2",
+    "count": "1",
     "name": "-",
-    "sprint_duration": "2 minggu",
-    "go_live": "Q3 2026",
-    "note_team": "Catatan tim"
+    "sprint_duration": "",
+    "go_live": "",
+    "note_team": ""
   }]
 }
 
 Aturan:
-- project_id: lowercase, spasi→underscore
-- mandays, budget_idr: integer saja
+- project_id: lowercase, spasi jadi underscore
+- mandays, budget_idr: angka integer saja
 - color_hex: #534AB7 ungu | #1D9E75 hijau | #BA7517 oranye | #D85A30 merah | #185FA5 biru
 - initials: 2 huruf kapital
-- Kosongkan field dengan "" jika tidak ada info
+- Field kosong: string kosong ""
 - badges: pisah dengan |
-- HANYA JSON, tidak ada teks lain`;
+
+MEETING NOTES:
+`;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -81,11 +83,10 @@ export default async function handler(req, res) {
 
   try {
     const { text } = req.body;
-    if (!text || text.trim().length < 20) {
+    if (!text || text.trim().length < 20)
       return res.status(400).json({ error: 'Teks terlalu pendek' });
-    }
 
-    // ── 1. Call OpenRouter ──────────────────────────────
+    // ── 1. Call OpenRouter ──────────────────────────
     const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -97,12 +98,17 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: OR_MODEL,
         messages: [
-          { role: 'system', content: 'Kamu adalah AI yang mengekstrak data dari meeting notes menjadi JSON terstruktur. Selalu kembalikan JSON valid tanpa penjelasan.' },
-          { role: 'user', content: PROMPT + '\n\n' + text.substring(0, 10000) }
+          {
+            role: 'system',
+            content: 'Kamu mengekstrak data meeting notes menjadi JSON. Balas HANYA dengan JSON valid, tanpa markdown, tanpa penjelasan.'
+          },
+          {
+            role: 'user',
+            content: PROMPT + text.substring(0, 10000)
+          }
         ],
         temperature: 0.1,
         max_tokens: 4096,
-        response_format: { type: 'json_object' },
       })
     });
 
@@ -114,22 +120,24 @@ export default async function handler(req, res) {
     const aiData = await aiRes.json();
     const rawText = aiData?.choices?.[0]?.message?.content || '';
 
-    if (!rawText) throw new Error('AI tidak mengembalikan respons. Coba lagi.');
+    if (!rawText || rawText.trim().length < 10)
+      throw new Error('AI tidak mengembalikan respons. Model: ' + OR_MODEL);
 
-    // ── 2. Parse JSON ───────────────────────────────────
+    // ── 2. Parse JSON ───────────────────────────────
     let extracted;
     try {
-      const clean = rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+      // extract JSON block dari response
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      const clean = jsonMatch ? jsonMatch[0] : rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
       extracted = JSON.parse(clean);
     } catch(e) {
       throw new Error(`Gagal parse JSON: ${rawText.substring(0, 200)}`);
     }
 
-    if (!extracted.project?.project_id) {
-      throw new Error('AI tidak berhasil mengidentifikasi project dari dokumen');
-    }
+    if (!extracted.project?.project_id)
+      throw new Error('AI tidak mengidentifikasi project dari dokumen');
 
-    // ── 3. Save ke Supabase ─────────────────────────────
+    // ── 3. Save ke Supabase ─────────────────────────
     const saved = { project: null, regulasi: null, apis: [], team: [] };
 
     if (extracted.project?.project_id)
