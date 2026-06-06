@@ -530,53 +530,135 @@ function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.rem
 
 // ═══ RIGHT PANEL ════════════════════════════════════
 function renderRPDD(q, recommended){
-  var el=document.getElementById('rp-dd-items');el.innerHTML='';
-  var recIds=recommended||curRecommended||[];
-  var approved=DB.projects.filter(function(p){return p.status==='approved';});
+  var el=document.getElementById('rp-dd-items'); el.innerHTML='';
+  var recIds = recommended || curRecommended || [];
+  var approved = DB.projects.filter(function(p){ return p.status==='approved'; });
 
-  function addItem(p, isRec){
-    var d=document.createElement('div');d.className='rp-dd-item'+(curProj===p.project_id?' sel':'');
-    var badge=isRec?'<span style="font-size:9px;padding:1px 5px;border-radius:20px;background:#EEF0FB;color:#534AB7;margin-left:auto;flex-shrink:0">Related</span>':'';
-    d.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+(p.color_hex||'#888')+';display:inline-block;flex-shrink:0"></span><span style="flex:1">'+p.project_name+'</span>'+badge;
-    d.style.display='flex';d.style.alignItems='center';d.style.gap='8px';
-    d.onclick=function(){selectProj(p.project_id);};
-    el.appendChild(d);
+  function makeItem(p, isRec){
+    var d = document.createElement('div');
+    d.className = 'rp-dd-item' + (curProj===p.project_id ? ' sel' : '');
+    var badge = isRec ? '<span style="font-size:9px;padding:1px 6px;border-radius:20px;background:#EEF0FB;color:#534AB7;margin-left:auto;flex-shrink:0">Related</span>' : '';
+    d.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:'+(p.color_hex||'#888')+';display:inline-block;flex-shrink:0"></span>'
+      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.project_name+'</span>'+badge;
+    d.style.cssText = 'display:flex;align-items:center;gap:8px;padding:9px 11px;font-size:12px;color:var(--text2);cursor:pointer;transition:background .1s';
+    d.onmouseover = function(){ d.style.background='var(--bg2)'; };
+    d.onmouseout  = function(){ d.style.background=''; };
+    d.onclick = function(){ selectProj(p.project_id); };
+    return d;
+  }
+
+  function addSection(label, bgColor, textColor){
+    var s = document.createElement('div');
+    s.style.cssText = 'padding:5px 11px 3px;font-size:10px;font-weight:500;color:'+textColor+';letter-spacing:.06em;text-transform:uppercase;background:'+bgColor+';border-bottom:.5px solid var(--border)';
+    s.textContent = label;
+    el.appendChild(s);
   }
 
   if(q){
     // Search mode: show ALL approved matching query
-    var f=approved.filter(function(p){
-      return p.project_name.toLowerCase().includes(q.toLowerCase())||
-             (p.squad||'').toLowerCase().includes(q.toLowerCase());
+    var f = approved.filter(function(p){
+      return p.project_name.toLowerCase().includes(q.toLowerCase())
+          || (p.squad||'').toLowerCase().includes(q.toLowerCase());
     });
-    if(!f.length){el.innerHTML='<div class="rp-dd-empty">Not found</div>';return;}
-    var sec=document.createElement('div');
-    sec.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;background:var(--bg2)';
-    sec.textContent='All Approved Projects';
-    el.appendChild(sec);
-    f.forEach(function(p){addItem(p, recIds.indexOf(p.project_id)!==-1);});
-  } else if(recIds.length){
-    // No search: show ONLY recommended
-    var recList=approved.filter(function(p){return recIds.indexOf(p.project_id)!==-1;});
+    if(!f.length){ el.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text3);text-align:center;font-style:italic">No projects found</div>'; return; }
+    addSection('All Approved Projects', 'var(--bg2)', 'var(--text3)');
+    f.forEach(function(p){ el.appendChild(makeItem(p, recIds.indexOf(p.project_id)!==-1)); });
+  } else if(recIds.length > 0){
+    // Show ONLY related projects, with hint to search for more
+    var recList = approved.filter(function(p){ return recIds.indexOf(p.project_id) !== -1; });
     if(!recList.length){
-      el.innerHTML='<div class="rp-dd-empty">Ketik untuk cari project...</div>';return;
+      el.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text3);text-align:center;font-style:italic">Type to search projects...</div>';
+      return;
     }
-    var sec2=document.createElement('div');
-    sec2.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;background:var(--accent-bg)';
-    sec2.textContent='✦ Related Project';
-    el.appendChild(sec2);
-    recList.forEach(function(p){addItem(p,true);});
-    var hint=document.createElement('div');
-    hint.style.cssText='padding:6px 11px;font-size:11px;color:var(--text3);font-style:italic;border-top:.5px solid var(--border)';
-    hint.textContent='Type to search other projects...';
+    addSection('✦ Related Projects', 'var(--accent-bg)', 'var(--accent)');
+    recList.forEach(function(p){ el.appendChild(makeItem(p, true)); });
+    var hint = document.createElement('div');
+    hint.style.cssText = 'padding:7px 11px;font-size:11px;color:var(--text3);font-style:italic;border-top:.5px solid var(--border);text-align:center';
+    hint.textContent = 'Type to search all approved projects...';
     el.appendChild(hint);
   } else {
-    // No recommendation yet: show all approved
-    if(!approved.length){el.innerHTML='<div class="rp-dd-empty">No approved projects yet</div>';return;}
-    approved.forEach(function(p){addItem(p,false);});
+    // No recommendation: show all approved
+    if(!approved.length){ el.innerHTML='<div style="padding:10px;font-size:12px;color:var(--text3);text-align:center;font-style:italic">No approved projects yet</div>'; return; }
+    addSection('All Approved Projects', 'var(--bg2)', 'var(--text3)');
+    approved.forEach(function(p){ el.appendChild(makeItem(p, false)); });
   }
 }
 var curRecommended = [];
+
+function findRelatedProjects(projectName, excludeId, proj, reg, apis){
+  var domains = [
+    {name:'transfer',    kw:['transfer','bifast','kliring','rtgs','swift','remittance','wire transfer','online transfer','real-time transfer']},
+    {name:'va',          kw:['virtual account','va payment','va number','bank code','va transfer']},
+    {name:'kyc',         kw:['kyc','identity','onboarding','liveness','biometric','ocr','id card','verification']},
+    {name:'notification',kw:['notification','push','fcm','sms','email','alert','messaging','notif']},
+    {name:'qris',        kw:['qris','merchant','qr code','mdr','dynamic qr','static qr']},
+    {name:'fraud',       kw:['fraud','security','aml','fatf','compliance','sanction','screening']},
+    {name:'mobile',      kw:['mobile banking','mobile app','ios','android']},
+    {name:'openbanking', kw:['open banking','api partner','oauth','mtls']},
+    {name:'loyalty',     kw:['loyalty','points','reward','redeem']},
+  ];
+
+  var corpus = [
+    projectName||'',
+    proj ? (proj.squad||'') : '',
+    proj ? (proj.note_info||'') : '',
+    reg ? (reg.dasar_hukum||'') : '',
+    reg ? (reg.badges||'').split('|').join(' ') : '',
+    reg ? (reg.note_reg||'') : '',
+  ];
+  if(apis) apis.forEach(function(a){
+    corpus.push(a.api_name||'');
+    corpus.push((a.badges||'').split('|').join(' '));
+    corpus.push(a.note_api||'');
+  });
+  var text = corpus.join(' ').toLowerCase();
+
+  var docDomains = {};
+  domains.forEach(function(d){
+    var hits = d.kw.filter(function(kw){ return text.indexOf(kw) !== -1; });
+    if(hits.length > 0) docDomains[d.name] = hits.length;
+  });
+
+  var scores = [];
+  DB.projects.filter(function(p){
+    return p.status === 'approved' && p.project_id !== excludeId;
+  }).forEach(function(p){
+    var score = 0;
+    var pReg = DB.reg[p.project_id] || {};
+    var pApis = DB.api[p.project_id] || [];
+    var pHay = [
+      p.project_name||'',
+      p.squad||'',
+      p.note_info||'',
+      (pReg.badges||'').split('|').join(' '),
+      pReg.note_reg||'',
+      pReg.dasar_hukum||'',
+    ].concat(pApis.map(function(a){
+      return (a.badges||'').split('|').join(' ') + ' ' + (a.note_api||'') + ' ' + (a.api_name||'');
+    })).join(' ').toLowerCase();
+
+    domains.forEach(function(d){
+      if(docDomains[d.name]){
+        var pHits = d.kw.filter(function(kw){ return pHay.indexOf(kw) !== -1; });
+        score += pHits.length * docDomains[d.name] * 2;
+      }
+    });
+
+    if(proj && proj.squad && p.squad &&
+       proj.squad.toLowerCase() === p.squad.toLowerCase()) score += 3;
+
+    if(score > 0) scores.push({id: p.project_id, score: score});
+  });
+
+  scores.sort(function(a,b){ return b.score - a.score; });
+  curRecommended = scores.filter(function(x){ return x.score >= 4; }).slice(0,3).map(function(x){ return x.id; });
+
+  if(curRecommended.length > 0){
+    setTimeout(function(){ openRPDD(); }, 500);
+  }
+}
+
+
 function filterRPDD(q){renderRPDD(q, curRecommended);}
 function toggleRPDD(){rpddOpen?closeRPDD():openRPDD();}
 function openRPDD(){rpddOpen=true;renderRPDD('',curRecommended);document.getElementById('rp-dd-list').classList.add('show');document.getElementById('rp-chev').classList.add('open');setTimeout(function(){document.getElementById('rp-search').focus();},50);}
@@ -1180,7 +1262,7 @@ document.addEventListener('click',function(e){
 loadData(false);
 </script>
 <div style="position:fixed;bottom:0;left:0;right:0;height:22px;background:var(--bg2);border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none">
-  <span style="font-size:10px;color:var(--text3);font-family:var(--font);letter-spacing:.04em">ProdDev Assistant &nbsp;·&nbsp; v1.0.13 &nbsp;·&nbsp; © 2026 Squad Product</span>
+  <span style="font-size:10px;color:var(--text3);font-family:var(--font);letter-spacing:.04em">ProdDev Assistant &nbsp;·&nbsp; v1.0.14 &nbsp;·&nbsp; © 2026 Squad Product</span>
 </div>
 </body>
 </html>
