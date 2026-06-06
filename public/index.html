@@ -447,7 +447,7 @@ var DB={projects:[],reg:{},api:{},team:{}};
 
 // ═══ SUPABASE FETCH ═════════════════════════════════
 function sbFetch(table, params) {
-  var url = SUPABASE_URL + '/rest/v1/' + table + '?' + (params||'select=*&order=project_id');
+  var url = SUPABASE_URL + '/rest/v1/' + table + '?' + (params||'select=*');
   return fetch(url, {
     headers: {
       'apikey': SUPABASE_KEY,
@@ -869,7 +869,18 @@ function switchDoc(t,projName){
   setDocStatus(curDocStatus);
   // Get dynamic docs based on current project data
   var d;
-  if(curDocs && curDocs[t]) {
+  // Check if there's saved content in DB for this doc type
+  var colMap = {brd:'doc_brd', arch:'doc_arch', dfd:'doc_dfd'};
+  var savedCol = colMap[t];
+  var proj = curProjId ? DB.projects.find(function(x){return x.project_id===curProjId;}) : null;
+  var savedContent = proj && savedCol && proj[savedCol] ? proj[savedCol] : null;
+
+  if(savedContent) {
+    // Use saved content if available
+    var lb = t==='brd'?'var(--info-bg)':t==='arch'?'var(--success-bg)':'var(--warn-bg)';
+    var lc = t==='brd'?'var(--info)':t==='arch'?'var(--success)':'var(--warn)';
+    d = {lb:lb, lc:lc, html:savedContent};
+  } else if(curDocs && curDocs[t]) {
     d = curDocs[t];
   } else {
     // fallback generic
@@ -959,10 +970,21 @@ function enableEdit(){
 
 function saveDoc(){
   var el=document.getElementById('doc-editable');
-  if(el) el.setAttribute('contenteditable','false');
+  if(!el) return;
+  el.setAttribute('contenteditable','false');
   // Switch button: hide Save, show Edit
   document.getElementById('btn-save').style.display='none';
   document.getElementById('btn-edit').style.display='';
+  // Save content to Supabase
+  if(curProjId && curDocType){
+    var colMap = {brd:'doc_brd', arch:'doc_arch', dfd:'doc_dfd'};
+    var col = colMap[curDocType];
+    if(col){
+      var patch = {};
+      patch[col] = el.innerHTML;
+      sbPatch('projects', 'project_id=eq.'+curProjId, patch);
+    }
+  }
   toast('✓ Dokumen disimpan');
 }
 
