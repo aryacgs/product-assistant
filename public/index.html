@@ -529,20 +529,50 @@ function openSB(){sbOpen=true;document.getElementById('sidebar').classList.add('
 function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-overlay').classList.remove('open');document.getElementById('sb-search').value='';}
 
 // ═══ RIGHT PANEL ════════════════════════════════════
-function renderRPDD(q){
+function renderRPDD(q, recommended){
   var el=document.getElementById('rp-dd-items');el.innerHTML='';
-  var f=DB.projects.filter(function(p){return !q||p.project_name.toLowerCase().includes(q.toLowerCase());});
-  if(!f.length){el.innerHTML='<div class="rp-dd-empty">'+(DB.projects.length?'Tidak ditemukan':'Memuat...')+'</div>';return;}
-  f.forEach(function(p){
+  // Only show approved projects
+  var approved=DB.projects.filter(function(p){return p.status==='approved';});
+  var f=approved.filter(function(p){return !q||p.project_name.toLowerCase().includes(q.toLowerCase())||p.squad.toLowerCase().includes(q.toLowerCase());});
+  if(!f.length){el.innerHTML='<div class="rp-dd-empty">'+(approved.length?'Tidak ditemukan':'Belum ada project approved')+'</div>';return;}
+
+  // Split into recommended and others if recommended list given
+  var recIds=recommended||[];
+  var recList=f.filter(function(p){return recIds.indexOf(p.project_id)!==-1;});
+  var otherList=f.filter(function(p){return recIds.indexOf(p.project_id)===-1;});
+
+  function addItem(p, isRec){
     var d=document.createElement('div');d.className='rp-dd-item'+(curProj===p.project_id?' sel':'');
-    d.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+(p.color_hex||'#888')+';display:inline-block;flex-shrink:0"></span><span>'+p.project_name+'</span>';
+    var badge=isRec?'<span style="font-size:9px;padding:1px 5px;border-radius:20px;background:#EEF0FB;color:#534AB7;margin-left:auto;flex-shrink:0">Related</span>':'';
+    d.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:'+(p.color_hex||'#888')+';display:inline-block;flex-shrink:0"></span><span style="flex:1">'+p.project_name+'</span>'+badge;
+    d.style.display='flex';d.style.alignItems='center';d.style.gap='8px';
     d.onclick=function(){selectProj(p.project_id);};
     el.appendChild(d);
-  });
+  }
+
+  if(recList.length && !q){
+    // Section header: Rekomendasi
+    var sec1=document.createElement('div');
+    sec1.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;background:var(--accent-bg)';
+    sec1.textContent='✦ Related';
+    el.appendChild(sec1);
+    recList.forEach(function(p){addItem(p,true);});
+
+    if(otherList.length){
+      var sec2=document.createElement('div');
+      sec2.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;background:var(--bg2)';
+      sec2.textContent='Semua Project';
+      el.appendChild(sec2);
+      otherList.forEach(function(p){addItem(p,false);});
+    }
+  } else {
+    f.forEach(function(p){addItem(p, recIds.indexOf(p.project_id)!==-1);});
+  }
 }
-function filterRPDD(q){renderRPDD(q);}
+var curRecommended = [];
+function filterRPDD(q){renderRPDD(q, curRecommended);}
 function toggleRPDD(){rpddOpen?closeRPDD():openRPDD();}
-function openRPDD(){rpddOpen=true;renderRPDD('');document.getElementById('rp-dd-list').classList.add('show');document.getElementById('rp-chev').classList.add('open');setTimeout(function(){document.getElementById('rp-search').focus();},50);}
+function openRPDD(){rpddOpen=true;renderRPDD('',curRecommended);document.getElementById('rp-dd-list').classList.add('show');document.getElementById('rp-chev').classList.add('open');setTimeout(function(){document.getElementById('rp-search').focus();},50);}
 function closeRPDD(){rpddOpen=false;document.getElementById('rp-dd-list').classList.remove('show');document.getElementById('rp-chev').classList.remove('open');document.getElementById('rp-search').value='';}
 function selectProj(pid){
   curProj=pid;
@@ -721,6 +751,8 @@ function showResult(data,filename){
     // Store current project id
     curProjId = data.project_id;
     curDocStatus = 'draft';
+    // Find related approved projects based on keywords
+    findRelatedProjects(data.project_name, data.project_id);
     // Show drafts
     showDrafts(data.project_name);
     // Reload data and auto-select project
