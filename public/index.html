@@ -863,7 +863,7 @@ var curDocs = null; // will be set when project loaded
 
 function switchDoc(t,projName){
   ['brd','arch','dfd'].forEach(function(x){document.getElementById('di-'+x).classList.toggle('active',x===t);});
-  var d=DOCS[t];var titles={brd:'BRD',arch:'Architecture',dfd:'DFD'};
+  var titles={brd:'BRD',arch:'Architecture',dfd:'DFD'};
   document.getElementById('c-title').textContent=titles[t]+(projName?' — '+projName:'');
   curDocType=t;
   setDocStatus(curDocStatus);
@@ -1003,8 +1003,15 @@ function loadProjectDoc(p){
   var teams = DB.team[p.project_id] || [];
   curDocs = generateDocs(p, reg, apis, teams);
 
-  // Load BRD by default
+  // Load BRD by default — auto-click to show content
+  var brdItem = document.getElementById('di-brd');
+  if(brdItem) brdItem.classList.add('active');
   switchDoc('brd', p.project_name);
+
+  // Force center body to show doc (not empty state)
+  var cb = document.getElementById('c-body');
+  cb.style.alignItems = 'flex-start';
+  cb.style.justifyContent = 'flex-start';
 }
 
 function newProject(){
