@@ -701,7 +701,7 @@ function handleFile(file){
 
 function submitPaste(){
   var text=document.getElementById('paste-area').value.trim();
-  if(!text||text.length<20){toast('⚠ Teks terlalu pendek');return;}
+  if(!text||text.length<20){toast('⚠ Text is too short');return;}
   startExtract('paste-input.txt', text);
 }
 
@@ -752,17 +752,42 @@ function showResult(data,filename){
   var rc=document.getElementById('u-result-content');
 
   if(data.ok){
-    // Store state immediately
+    // Store state
     curProjId = data.project_id;
     curDocStatus = 'draft';
     // Add source to left panel
     addSrc(filename, data.project_id);
     // Close modal immediately
     closeUpload();
-    // Render doc right away using extracted data
-    showDrafts(data.project_name, data.extracted);
-    // Find related projects & show dropdown
-    findRelatedProjects(data.project_name, data.project_id);
+    // Build project-like object from extracted data for immediate rendering
+    var exProj = data.extracted && data.extracted.project ? data.extracted.project : {project_id: data.project_id, project_name: data.project_name};
+    var exReg  = data.extracted && data.extracted.regulasi ? data.extracted.regulasi : null;
+    var exApis = data.extracted && data.extracted.apis ? data.extracted.apis : [];
+    var exTeam = data.extracted && data.extracted.team ? data.extracted.team : [];
+    // Generate docs and show immediately
+    curDocs = generateDocs(exProj, exReg, exApis, exTeam);
+    // Load project view (title, status, buttons)
+    document.getElementById('tb-title').textContent = data.project_name + ' — ProdDev Assistant';
+    docReady = true;
+    ['brd','arch','dfd'].forEach(function(t){
+      document.getElementById('di-'+t).classList.add('rdy');
+      document.getElementById('badge-'+t).style.display='inline-block';
+    });
+    document.getElementById('di-brd').classList.add('active');
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('btn-edit').style.display = '';
+    document.getElementById('btn-save').style.display = 'none';
+    document.getElementById('c-title').textContent = 'BRD — ' + data.project_name;
+    setDocStatus('draft');
+    var d = curDocs.brd;
+    var cb = document.getElementById('c-body');
+    cb.style.alignItems = 'flex-start';
+    cb.style.justifyContent = 'flex-start';
+    cb.innerHTML = '<div class="doc-wrap" id="doc-editable-wrap">'
+      + '<div class="doc-label" style="background:'+d.lb+';color:'+d.lc+'" id="doc-label-badge">Draft</div>'
+      + '<div class="doc-content-editable" id="doc-editable">'+d.html+'</div></div>';
+    // Find related approved projects
+    findRelatedProjects(data.project_name, data.project_id, exProj, exReg, exApis);
     // Reload sidebar in background
     loadData(false);
     toast('✓ ' + data.project_name + ' successfully extracted!');
