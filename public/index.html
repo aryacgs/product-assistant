@@ -531,15 +531,8 @@ function closeSB(){sbOpen=false;document.getElementById('sidebar').classList.rem
 // ═══ RIGHT PANEL ════════════════════════════════════
 function renderRPDD(q, recommended){
   var el=document.getElementById('rp-dd-items');el.innerHTML='';
-  // Only show approved projects
+  var recIds=recommended||curRecommended||[];
   var approved=DB.projects.filter(function(p){return p.status==='approved';});
-  var f=approved.filter(function(p){return !q||p.project_name.toLowerCase().includes(q.toLowerCase())||p.squad.toLowerCase().includes(q.toLowerCase());});
-  if(!f.length){el.innerHTML='<div class="rp-dd-empty">'+(approved.length?'Tidak ditemukan':'Belum ada project approved')+'</div>';return;}
-
-  // Split into recommended and others if recommended list given
-  var recIds=recommended||[];
-  var recList=f.filter(function(p){return recIds.indexOf(p.project_id)!==-1;});
-  var otherList=f.filter(function(p){return recIds.indexOf(p.project_id)===-1;});
 
   function addItem(p, isRec){
     var d=document.createElement('div');d.className='rp-dd-item'+(curProj===p.project_id?' sel':'');
@@ -550,23 +543,37 @@ function renderRPDD(q, recommended){
     el.appendChild(d);
   }
 
-  if(recList.length && !q){
-    // Section header: Rekomendasi
-    var sec1=document.createElement('div');
-    sec1.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;background:var(--accent-bg)';
-    sec1.textContent='✦ Related';
-    el.appendChild(sec1);
-    recList.forEach(function(p){addItem(p,true);});
-
-    if(otherList.length){
-      var sec2=document.createElement('div');
-      sec2.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;background:var(--bg2)';
-      sec2.textContent='Semua Project';
-      el.appendChild(sec2);
-      otherList.forEach(function(p){addItem(p,false);});
-    }
-  } else {
+  if(q){
+    // Search mode: show ALL approved matching query
+    var f=approved.filter(function(p){
+      return p.project_name.toLowerCase().includes(q.toLowerCase())||
+             (p.squad||'').toLowerCase().includes(q.toLowerCase());
+    });
+    if(!f.length){el.innerHTML='<div class="rp-dd-empty">Tidak ditemukan</div>';return;}
+    var sec=document.createElement('div');
+    sec.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;background:var(--bg2)';
+    sec.textContent='Semua Project Approved';
+    el.appendChild(sec);
     f.forEach(function(p){addItem(p, recIds.indexOf(p.project_id)!==-1);});
+  } else if(recIds.length){
+    // No search: show ONLY recommended
+    var recList=approved.filter(function(p){return recIds.indexOf(p.project_id)!==-1;});
+    if(!recList.length){
+      el.innerHTML='<div class="rp-dd-empty">Ketik untuk cari project...</div>';return;
+    }
+    var sec2=document.createElement('div');
+    sec2.style.cssText='padding:5px 11px 3px;font-size:10px;font-weight:500;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;background:var(--accent-bg)';
+    sec2.textContent='✦ Related Project';
+    el.appendChild(sec2);
+    recList.forEach(function(p){addItem(p,true);});
+    var hint=document.createElement('div');
+    hint.style.cssText='padding:6px 11px;font-size:11px;color:var(--text3);font-style:italic;border-top:.5px solid var(--border)';
+    hint.textContent='Ketik untuk cari project lain...';
+    el.appendChild(hint);
+  } else {
+    // No recommendation yet: show all approved
+    if(!approved.length){el.innerHTML='<div class="rp-dd-empty">Belum ada project approved</div>';return;}
+    approved.forEach(function(p){addItem(p,false);});
   }
 }
 var curRecommended = [];
