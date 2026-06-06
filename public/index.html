@@ -753,13 +753,12 @@ function showResult(data,filename){
     curDocStatus = 'draft';
     // Find related approved projects based on keywords
     findRelatedProjects(data.project_name, data.project_id);
-    // Show drafts
-    showDrafts(data.project_name);
-    // Reload data and auto-select project
+    // Show drafts with extracted data for immediate doc generation
+    showDrafts(data.project_name, data.extracted);
+    // Close modal after short delay
+    setTimeout(function(){ closeUpload(); }, 1200);
+    // Reload data in background to update sidebar
     loadData(false);
-    setTimeout(function(){
-      if(data.project_id){selectProj(data.project_id);}
-    },1500);
     toast('✓ '+data.project_name+' berhasil diekstrak!');
   } else {
     rc.innerHTML='<div class="u-result-err"><div class="u-result-err-title">⚠ Gagal ekstrak</div><div class="u-result-err-sub">'+(data.error||'Terjadi kesalahan')+'</div></div>';
