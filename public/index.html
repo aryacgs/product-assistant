@@ -940,14 +940,18 @@ function setDocStatus(s){
       sb.disabled=false;sb.textContent='Submit Final';
     }
   }
-  // update Edit btn visibility
-  var canEdit = (s !== 'done');
+  // update Edit btn visibility — only show for draft and on_progress
+  var canEdit = (s === 'draft' || s === 'on_progress');
   var be=document.getElementById('btn-edit');
   var bs=document.getElementById('btn-save');
   if(be && bs){
     // only update if save btn is hidden (not in edit mode)
     if(bs.style.display==='none'||bs.style.display===''){
       be.style.display = canEdit ? '' : 'none';
+    }
+    // If currently editing and status changed to pending/done, force save
+    if(!canEdit && bs.style.display!=='none'){
+      saveDoc();
     }
   }
   // sync to Supabase if project exists
@@ -957,6 +961,11 @@ function setDocStatus(s){
 }
 
 function enableEdit(){
+  // Only allow edit for draft and on_progress
+  if(curDocStatus==='pending'||curDocStatus==='done'){
+    toast('⚠ Dokumen '+curDocStatus+' tidak dapat diedit');
+    return;
+  }
   var el=document.getElementById('doc-editable');
   if(!el)return;
   el.setAttribute('contenteditable','true');
@@ -964,24 +973,29 @@ function enableEdit(){
   // Switch button: hide Edit, show Save
   document.getElementById('btn-edit').style.display='none';
   document.getElementById('btn-save').style.display='';
-  // Update status to on_progress
+  // Update status to on_progress if still draft
   if(curDocStatus==='draft') setDocStatus('on_progress');
 }
 
 function saveDoc(){
   var el=document.getElementById('doc-editable');
   if(!el) return;
+  var newContent = el.innerHTML;
   el.setAttribute('contenteditable','false');
   // Switch button: hide Save, show Edit
   document.getElementById('btn-save').style.display='none';
   document.getElementById('btn-edit').style.display='';
-  // Save content to Supabase
+  // Update in-memory DB so no refresh needed
   if(curProjId && curDocType){
     var colMap = {brd:'doc_brd', arch:'doc_arch', dfd:'doc_dfd'};
     var col = colMap[curDocType];
     if(col){
+      // Update local DB cache immediately
+      var proj = DB.projects.find(function(x){return x.project_id===curProjId;});
+      if(proj) proj[col] = newContent;
+      // Save to Supabase
       var patch = {};
-      patch[col] = el.innerHTML;
+      patch[col] = newContent;
       sbPatch('projects', 'project_id=eq.'+curProjId, patch);
     }
   }
