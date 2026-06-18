@@ -131,6 +131,15 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .foot-s{font-size:10px;color:var(--text2);line-height:1.5}
 .version-bar{text-align:center;padding:4px;font-size:9px;color:var(--text3);background:var(--bg2);border-top:.5px solid var(--border);letter-spacing:.04em}
 
+/* KNOWLEDGE INSIGHTS — feature tab cards */
+.ki-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 13px}
+.ki-feat{border:.5px solid var(--border);border-radius:8px;padding:9px;background:var(--bg);cursor:pointer;text-align:left;transition:.12s}
+.ki-feat:hover{background:var(--bg2);border-color:var(--border2)}
+.ki-feat.active{border:1.5px solid var(--accent);background:var(--accent-bg)}
+.ki-feat-ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;margin-bottom:6px}
+.ki-feat-t{font-size:11px;font-weight:600;color:var(--text);line-height:1.2}
+.ki-feat-s{font-size:9px;color:var(--text3);margin-top:2px}
+.ki-section-label{font-size:9px;font-weight:600;color:var(--accent);letter-spacing:.05em;padding:8px 13px 4px}
 /* REFERENCE PANEL */
 .ref-head{display:flex;align-items:center;gap:8px;padding:9px 13px 6px;background:var(--accent-bg);border-top:.5px solid var(--border)}
 .ref-title{font-size:11px;font-weight:600;color:var(--accent);flex:1}
@@ -330,10 +339,12 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 
   <!-- RIGHT: Knowledge Insights + Quality Checker -->
   <div class="right" id="right-panel">
+    <div class="panel-hdr"><span class="num">4</span> Knowledge Insights</div>
     <div class="rp-dd-wrap">
+      <div style="font-size:9px;color:var(--text3);letter-spacing:.05em;margin-bottom:5px;text-transform:uppercase">Related Project</div>
       <button class="rp-dd-btn" id="rp-btn" onclick="toggleRPDD()">
         <span style="width:7px;height:7px;border-radius:50%;background:var(--dark-text2);flex-shrink:0" id="rp-dot"></span>
-        <span id="rp-label" style="flex:1;text-align:left">Related project...</span>
+        <span id="rp-label" style="flex:1;text-align:left">Select a project...</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" id="rp-chev"><path d="M2 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="rp-dd-list" id="rp-dd-list">
@@ -341,24 +352,30 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
         <div id="rp-dd-items"></div>
       </div>
     </div>
-    <!-- Reference project detail (collapsible, shows when a related project is picked) -->
-    <div id="ref-panel" style="display:none">
-      <div class="ref-head">
-        <span class="ref-title" id="ref-title">Reference</span>
-        <button class="ref-close" onclick="closeRef()">✕</button>
+    <!-- Feature tab cards (Project Info / Regulation / API / Team) -->
+    <div id="ki-content" style="display:none">
+      <div class="ki-feat-grid">
+        <button class="ki-feat" data-tab="info" onclick="refTab('info')">
+          <div class="ki-feat-ic" style="background:var(--accent-bg);color:var(--accent)">ℹ</div>
+          <div class="ki-feat-t">Project Info</div><div class="ki-feat-s">Mandays, budget</div>
+        </button>
+        <button class="ki-feat" data-tab="reg" onclick="refTab('reg')">
+          <div class="ki-feat-ic" style="background:var(--info-bg);color:var(--info)">🛡</div>
+          <div class="ki-feat-t">Regulation</div><div class="ki-feat-s">Fee, limit</div>
+        </button>
+        <button class="ki-feat" data-tab="api" onclick="refTab('api')">
+          <div class="ki-feat-ic" style="background:#F0EAFB;color:#7B3FB0">⌨</div>
+          <div class="ki-feat-t">API & Schema</div><div class="ki-feat-s">GraphQL, REST</div>
+        </button>
+        <button class="ki-feat" data-tab="team" onclick="refTab('team')">
+          <div class="ki-feat-ic" style="background:var(--success-bg);color:var(--success)">👥</div>
+          <div class="ki-feat-t">Team & Timeline</div><div class="ki-feat-s">Resource, go-live</div>
+        </button>
       </div>
-      <div class="ref-tabs" id="ref-tabs">
-        <button class="ref-tab active" data-tab="info" onclick="refTab('info')">Project Info</button>
-        <button class="ref-tab" data-tab="reg" onclick="refTab('reg')">Regulation</button>
-        <button class="ref-tab" data-tab="api" onclick="refTab('api')">API &amp; Schema</button>
-        <button class="ref-tab" data-tab="team" onclick="refTab('team')">Team</button>
-      </div>
-      <div class="ref-body" id="ref-body"></div>
+      <div class="ki-section-label" id="ki-section-label">● PROJECT INFO</div>
+      <div id="ref-body"></div>
     </div>
-    <div class="panel-hdr" style="border-top:.5px solid var(--border)"><span class="num">4</span> Knowledge Insights</div>
-    <div id="insights-body">
-      <div class="empty-hint">Upload a document to see insights</div>
-    </div>
+    <div id="ki-empty" class="empty-hint">Select a related project to view details</div>
     <div class="panel-hdr" style="border-top:.5px solid var(--border)"><span class="num">5</span> Requirement Quality Checker</div>
     <div id="quality-body" style="padding-bottom:10px">
       <div class="empty-hint">Upload a document to see quality scores</div>
@@ -366,7 +383,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.0.5 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.0.6 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -527,30 +544,19 @@ var refProjId=null, refTabCur='info';
 function selectProj(pid){
   var p=DB.projects.find(function(x){return x.project_id===pid;});if(!p)return;
   closeRPDD();
-  // Show as REFERENCE (do not switch the editor's current project)
   refProjId=pid;
   document.getElementById('rp-label').textContent=p.project_name;
   document.getElementById('rp-dot').style.background=p.color_hex||'#888';
-  document.getElementById('ref-title').textContent='Reference: '+p.project_name;
-  document.getElementById('ref-panel').style.display='block';
+  document.getElementById('ki-content').style.display='block';
+  document.getElementById('ki-empty').style.display='none';
   refTab('info');
-}
-function closeRef(){
-  refProjId=null;
-  document.getElementById('ref-panel').style.display='none';
-  // restore dropdown label to current working project
-  if(curProjId){
-    var cp=DB.projects.find(function(x){return x.project_id===curProjId;});
-    if(cp){document.getElementById('rp-label').textContent=cp.project_name;document.getElementById('rp-dot').style.background=cp.color_hex||'#888';}
-  } else {
-    document.getElementById('rp-label').textContent='Related project...';
-    document.getElementById('rp-dot').style.background='var(--dark-text2)';
-  }
 }
 function refTab(tab){
   refTabCur=tab;
-  var tabs=document.getElementById('ref-tabs').querySelectorAll('.ref-tab');
-  for(var i=0;i<tabs.length;i++){tabs[i].classList.toggle('active',tabs[i].getAttribute('data-tab')===tab);}
+  var cards=document.querySelectorAll('.ki-feat');
+  for(var i=0;i<cards.length;i++){cards[i].classList.toggle('active',cards[i].getAttribute('data-tab')===tab);}
+  var labels={info:'● PROJECT INFO',reg:'● REGULATION',api:'● API & SCHEMA',team:'● TEAM & TIMELINE'};
+  document.getElementById('ki-section-label').textContent=labels[tab]||'';
   renderRefBody();
 }
 function renderRefBody(){
@@ -735,44 +741,6 @@ function fmt(cmd){document.execCommand(cmd,false,null);}
 function fmtBlock(tag){document.execCommand('formatBlock',false,tag);}
 
 // ═══ INSIGHTS + QUALITY RENDER ═══
-function renderInsights(pid){
-  var body=document.getElementById('insights-body');
-  var ins=DB.insights[pid];
-  if(!ins){body.innerHTML='<div class="empty-hint">No insights available</div>';return;}
-  var html='';
-  function pipeList(str){return (str||'').split('|').filter(Boolean);}
-  // Similar past projects (from recommendation)
-  if(curRecommended.length){
-    var recNames=curRecommended.map(function(id){var p=DB.projects.find(function(x){return x.project_id===id;});return p?p.project_name:'';}).filter(Boolean);
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:var(--accent-bg);color:var(--accent)">📁</span><span class="ic-title">Similar Past Projects</span></div><div class="ic-body">'+recNames.map(function(n){return n;}).join(', ')+'</div><span class="ic-link" onclick="askInsight(\'similar projects\')">View summary →</span></div>';
-  }
-  // Affected systems
-  var sys=pipeList(ins.affected_systems);
-  if(sys.length){
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:var(--info-bg);color:var(--info)">🖥</span><span class="ic-title">Affected Systems</span></div><div class="ic-body">'+sys.map(function(s){return '<span class="ic-tag">'+s+'</span>';}).join('')+'</div></div>';
-  }
-  // Dependencies
-  var dep=pipeList(ins.dependencies);
-  if(dep.length){
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:#F0EAFB;color:#7B3FB0">🔗</span><span class="ic-title">Dependencies</span></div><div class="ic-body">'+dep.map(function(s){return '<span class="ic-tag">'+s+'</span>';}).join('')+'</div></div>';
-  }
-  // Policies
-  var pol=pipeList(ins.policies);
-  if(pol.length){
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:var(--success-bg);color:var(--success)">🛡</span><span class="ic-title">Policies & Regulations</span></div><div class="ic-body">'+pol.map(function(s){return '<span class="ic-tag">'+s+'</span>';}).join('')+'</div></div>';
-  }
-  // Past issues
-  if(ins.past_issues){
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:var(--danger-bg);color:var(--danger)">⚠</span><span class="ic-title">Past Issues / Lessons</span></div><div class="ic-body">'+ins.past_issues+'</div></div>';
-  }
-  // Clarifications
-  var cl=pipeList(ins.clarifications);
-  if(cl.length){
-    html+='<div class="insight-card"><div class="ic-head"><span class="ic-icon" style="background:#E9F6F9;color:#0E7490">💬</span><span class="ic-title">Suggested Clarification</span></div><div class="ic-body">'+cl.map(function(q){return '• '+q;}).join('<br>')+'</div></div>';
-  }
-  body.innerHTML=html||'<div class="empty-hint">No insights available</div>';
-}
-
 function renderQuality(pid){
   var body=document.getElementById('quality-body');
   var q=DB.quality[pid];
@@ -822,8 +790,13 @@ function loadProjectDoc(p){
   // recommendation for this project
   findRelatedProjects(p.project_name,p.project_id,p,DB.reg[p.project_id],DB.api[p.project_id]);
   renderRPDD('');
+  // reset panel-4 reference view
+  refProjId=null;
+  document.getElementById('ki-content').style.display='none';
+  document.getElementById('ki-empty').style.display='block';
+  document.getElementById('rp-label').textContent='Select a project...';
+  document.getElementById('rp-dot').style.background='var(--dark-text2)';
   // insights + quality
-  renderInsights(p.project_id);
   renderQuality(p.project_id);
   // show doc
   switchDoc('srs');
@@ -847,7 +820,7 @@ function newProject(){
   document.getElementById('tb-sub').textContent='Solution Ideation Journey — AI-Assisted Drafting, Insight & Requirement Checker';
   document.getElementById('rp-label').textContent='Related project...';
   document.getElementById('rp-dot').style.background='var(--dark-text2)';
-  document.getElementById('ref-panel').style.display='none';refProjId=null;
+  refProjId=null;
   document.getElementById('submit-btn').disabled=true;
   document.getElementById('submit-btn').textContent='Submit Final';
   document.getElementById('btn-edit').style.display='none';
@@ -855,7 +828,8 @@ function newProject(){
   document.getElementById('editor-toolbar').style.display='none';
   DOC_TYPES.forEach(function(t){document.getElementById('di-'+t).classList.remove('active');document.getElementById('ver-'+t).textContent='—';});
   document.getElementById('src-list').innerHTML='<div class="empty-hint">No sources yet</div>';
-  document.getElementById('insights-body').innerHTML='<div class="empty-hint">Upload a document to see insights</div>';
+  document.getElementById('ki-content').style.display='none';
+  document.getElementById('ki-empty').style.display='block';
   document.getElementById('quality-body').innerHTML='<div class="empty-hint">Upload a document to see quality scores</div>';
   document.getElementById('c-title').textContent='3. Document Draft';
   document.getElementById('c-body').innerHTML='<div class="c-empty"><div class="c-empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="var(--text3)" stroke-width="1"/><path d="M8 10h8M8 14h5" stroke="var(--text3)" stroke-width="1" stroke-linecap="round"/></svg></div><div class="c-empty-t">No document yet</div><div class="c-empty-s">Click <b>Upload & Extract AI</b> to upload meeting notes</div></div>';
