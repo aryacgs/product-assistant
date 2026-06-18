@@ -130,9 +130,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { text, filename } = req.body;
+    if (!OR_KEY) return res.status(500).json({ ok:false, error: 'OPENROUTER_API_KEY env var not set in Vercel' });
+    if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ ok:false, error: 'Supabase env vars not set in Vercel' });
+
+    const { text, filename } = req.body || {};
     if (!text || text.trim().length < 20)
-      return res.status(400).json({ error: 'Text too short' });
+      return res.status(400).json({ ok:false, error: 'Text too short' });
 
     let rawText = '', modelUsed = '', lastError = '';
 
@@ -154,7 +157,7 @@ export default async function handler(req, res) {
               { role: 'user', content: PROMPT + text.substring(0, 12000) }
             ],
             temperature: 0.2,
-            max_tokens: 8000,
+            max_tokens: 6000,
           })
         });
 
