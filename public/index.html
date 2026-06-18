@@ -309,22 +309,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-  <div class="foot-card">
-    <div class="foot-icon" style="background:var(--accent-bg);color:var(--accent)">📊</div>
-    <div><div class="foot-t" style="color:var(--accent)">Expected Benefit</div><div class="foot-s">AI insights and quality checking help RE members create better requirement drafts, reduce rework, and ensure higher requirement quality.</div></div>
-  </div>
-  <div class="foot-card">
-    <div class="foot-icon" style="background:var(--danger-bg);color:var(--danger)">⚠️</div>
-    <div><div class="foot-t" style="color:var(--danger)">Limitation</div><div class="foot-s">Quality depends on the completeness of input and the accuracy of organizational knowledge. Change management is still required.</div></div>
-  </div>
-  <div class="foot-card">
-    <div class="foot-icon" style="background:var(--success-bg);color:var(--success)">🎓</div>
-    <div><div class="foot-t" style="color:var(--success)">Lesson Learned</div><div class="foot-s">A complete solution must integrate AI and validation to ensure requirements are clear, consistent, and complete.</div></div>
-  </div>
-</div>
-<div class="version-bar">ProdDev Assistant · v2.0.0 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.0.1 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -731,9 +716,14 @@ function startExtract(filename,text){
   var steps=[[20,'Reading document...'],[40,'Identifying project details...'],[60,'Extracting regulations & APIs...'],[75,'Building team data...'],[88,'Analyzing quality & insights...']];
   var i=0;var iv=setInterval(function(){if(i<steps.length){document.getElementById('prog-fill').style.width=steps[i][0]+'%';document.getElementById('prog-txt').textContent=steps[i][1];i++;}},2200);
   fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text,filename:filename})})
-  .then(function(r){return r.json();})
+  .then(function(r){
+    return r.text().then(function(txt){
+      try{ return JSON.parse(txt); }
+      catch(e){ return {ok:false,error:'Server error ('+r.status+'): '+txt.substring(0,150)}; }
+    });
+  })
   .then(function(data){clearInterval(iv);document.getElementById('prog-fill').style.width='100%';document.getElementById('prog-txt').textContent='Done!';setTimeout(function(){showResult(data,filename);},400);})
-  .catch(function(err){clearInterval(iv);showResult({ok:false,error:err.message},filename);});
+  .catch(function(err){clearInterval(iv);showResult({ok:false,error:'Network error: '+err.message},filename);});
 }
 
 function showResult(data,filename){
