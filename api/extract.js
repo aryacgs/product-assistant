@@ -86,12 +86,6 @@ Return ONLY valid JSON, no markdown, no explanation. Use this exact schema:
     "stakeholder_confirmed": 0,
     "stakeholder_total": 5,
     "stakeholder_rating": "Good|Medium|Low"
-  },
-  "documents": {
-    "srs": "Software Requirements Specification draft in HTML (use <h2>, <p>, <ul><li>). Include Background, Functional Requirements (FR-1, FR-2...), Non-Functional Requirements (NFR-1...), Scope, Assumptions, Open Questions.",
-    "userstory": "User Story draft in HTML. Format: As a [role], I want [goal], so that [benefit]. Multiple stories.",
-    "acceptance": "Acceptance Criteria draft in HTML. Given/When/Then format per requirement.",
-    "scope": "Scope Document draft in HTML. In-scope and Out-of-scope sections."
   }
 }
 
@@ -117,7 +111,6 @@ For percentages: Good >= 80, Medium 60-79, Low < 60.
 For counts (ambiguity/consistency/redundancy): Good = 0, Medium = 1-2, Low = 3+.
 For stakeholder: Good >= 80% confirmed, Medium 50-79%, Low < 50%.
 
-Generate realistic document drafts based on actual extracted content. Make them useful, not placeholder.
 
 DOCUMENT:
 `;
@@ -157,7 +150,7 @@ export default async function handler(req, res) {
               { role: 'user', content: PROMPT + text.substring(0, 12000) }
             ],
             temperature: 0.2,
-            max_tokens: 6000,
+            max_tokens: 4000,
           })
         });
 
@@ -210,16 +203,6 @@ export default async function handler(req, res) {
 
     // 1. Project
     saved.project = await sbUpsert('projects', ex.project, 'project_id');
-
-    // 2. Documents → store in project columns
-    if (ex.documents) {
-      await sbPatch('projects', 'project_id=eq.'+pid, {
-        doc_srs:        ex.documents.srs || '',
-        doc_userstory:  ex.documents.userstory || '',
-        doc_acceptance: ex.documents.acceptance || '',
-        doc_scope:      ex.documents.scope || '',
-      });
-    }
 
     // 3. Regulation
     if (ex.regulasi?.project_id) saved.regulasi = await sbUpsert('regulasi', ex.regulasi, 'project_id');
