@@ -383,7 +383,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.0.6 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.0.7 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -727,9 +727,30 @@ function saveDoc(){
     var proj=DB.projects.find(function(x){return x.project_id===curProjId;});
     if(proj)proj[col]=html;
     var patch={};patch[col]=html;sbPatch('projects','project_id=eq.'+curProjId,patch);
+
+    // ── Realtime quality re-scan from edited text ──
+    var scores=computeQualityFromText(html);
+    var q=DB.quality[curProjId]||{project_id:curProjId};
+    q.completeness_pct=scores.completeness_pct;
+    q.completeness_rating=scores.completeness_rating;
+    q.ambiguity_count=scores.ambiguity_count;
+    q.ambiguity_rating=scores.ambiguity_rating;
+    q.consistency_count=scores.consistency_count;
+    q.consistency_rating=scores.consistency_rating;
+    q.redundancy_count=scores.redundancy_count;
+    q.redundancy_rating=scores.redundancy_rating;
+    DB.quality[curProjId]=q;
+    // persist the 4 recomputed metrics to DB
+    sbPatch('quality_scores','project_id=eq.'+curProjId,{
+      completeness_pct:q.completeness_pct,completeness_rating:q.completeness_rating,
+      ambiguity_count:q.ambiguity_count,ambiguity_rating:q.ambiguity_rating,
+      consistency_count:q.consistency_count,consistency_rating:q.consistency_rating,
+      redundancy_count:q.redundancy_count,redundancy_rating:q.redundancy_rating
+    });
+    renderQuality(curProjId);
   }
   var cs=document.getElementById('c-saved');cs.style.display='flex';setTimeout(function(){cs.style.display='none';},2000);
-  toast('✓ Document saved');
+  toast('✓ Saved — quality re-scanned');
 }
 function submitFinal(){
   if(curDocStatus==='pending'||curDocStatus==='done')return;
@@ -741,6 +762,69 @@ function fmt(cmd){document.execCommand(cmd,false,null);}
 function fmtBlock(tag){document.execCommand('formatBlock',false,tag);}
 
 // ═══ INSIGHTS + QUALITY RENDER ═══
+function computeQualityFromText(html){
+  // Strip HTML tags to plain text
+  var text = (html||'').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+  var lower = text.toLowerCase();
+  var words = lower.split(/\s+/).filter(Boolean);
+  var sentences = text.split(/[.!?\n]+/).map(function(s){return s.trim();}).filter(function(s){return s.length>3;});
+
+  // ── AMBIGUITY: count vague terms ──
+  var vagueTerms = ['fast','slow','quick','large','small','many','few','some','several','soon','as soon as possible','asap','etc','and so on','user-friendly','easy','simple','flexible','robust','efficient','appropriate','adequate','reasonable','minimal','maximal','optimal','better','improved','good','high','low','approximately','around','about','various','multiple','enough','sufficient','relevant','suitable','acceptable','normal','standard','typical'];
+  var ambiguityCount = 0;
+  vagueTerms.forEach(function(t){
+    var re = new RegExp('\\b'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g');
+    var m = lower.match(re);
+    if(m) ambiguityCount += m.length;
+  });
+
+  // ── COMPLETENESS: required sections present ──
+  var sections = [
+    {kw:['background','overview','introduction','objective','purpose']},
+    {kw:['functional requirement','fr-','shall','must','feature']},
+    {kw:['non-functional','nfr-','performance','security','availability','scalability']},
+    {kw:['scope','in scope','out of scope','boundary']},
+    {kw:['assumption','constraint','dependency','dependencies']},
+    {kw:['acceptance','criteria','given','when','then','success']}
+  ];
+  var found = 0;
+  sections.forEach(function(s){ if(s.kw.some(function(k){return lower.indexOf(k)!==-1;})) found++; });
+  var completenessPct = Math.round((found/sections.length)*100);
+
+  // ── REDUNDANCY: duplicate / near-duplicate sentences ──
+  var seen = {}, redundancyCount = 0;
+  sentences.forEach(function(s){
+    var norm = s.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+    if(norm.length < 10) return;
+    if(seen[norm]) redundancyCount++;
+    else seen[norm] = 1;
+  });
+
+  // ── CONSISTENCY: simple contradiction signals ──
+  var consistencyCount = 0;
+  // contradicting modal pairs in close proximity
+  var contradictionPairs = [['must not','must '],['shall not','shall '],['cannot','can '],['no longer','still']];
+  // duplicated requirement IDs with different text (FR-1 appearing 2+ times)
+  var frIds = (lower.match(/\b(fr|nfr)-\d+/g)||[]);
+  var idCount = {};
+  frIds.forEach(function(id){ idCount[id] = (idCount[id]||0)+1; });
+  Object.keys(idCount).forEach(function(id){ if(idCount[id]>1) consistencyCount++; });
+
+  function pctRating(p){ return p >= 80 ? 'Good' : p >= 60 ? 'Medium' : 'Low'; }
+  function countRating(c){ return c === 0 ? 'Good' : c <= 2 ? 'Medium' : 'Low'; }
+
+  return {
+    completeness_pct: completenessPct,
+    completeness_rating: pctRating(completenessPct),
+    ambiguity_count: ambiguityCount,
+    ambiguity_rating: countRating(ambiguityCount),
+    consistency_count: consistencyCount,
+    consistency_rating: countRating(consistencyCount),
+    redundancy_count: redundancyCount,
+    redundancy_rating: countRating(redundancyCount)
+  };
+}
+
 function renderQuality(pid){
   var body=document.getElementById('quality-body');
   var q=DB.quality[pid];
