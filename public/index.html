@@ -439,7 +439,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.1.1 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.1.2 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -483,6 +483,7 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 
 // ═══ STATE ═══
 var sbOpen=false,udOpen=false,rpddOpen=false,docReady=false;
+var lastModelUsed="";
 var curProj=null,curProjId=null,curDocType='srs',curDocStatus='draft';
 var curDocs={},curRecommended=[];
 var DB={projects:[],reg:{},api:{},team:{},insights:{},quality:{},sources:{}};
@@ -1007,16 +1008,22 @@ function showResult(data,filename){
   document.getElementById('u-result').style.display='block';
   var rc=document.getElementById('u-result-content');
   if(data.ok){
-    rc.innerHTML='<div style="background:var(--success-bg);border:.5px solid #97C459;border-radius:7px;padding:12px"><div style="font-size:13px;font-weight:600;color:var(--success);margin-bottom:3px">✓ Successfully extracted!</div><div style="font-size:11px;color:#3B6D11">Project: <b>'+data.project_name+'</b><br>Model: '+(data.model_used||'AI')+'</div></div>';
-    closeUpload();
-    // reload data then open the new project
+    var modelName=data.model_used||'AI';
+    lastModelUsed=modelName;
+    rc.innerHTML='<div style="background:var(--success-bg);border:.5px solid #97C459;border-radius:8px;padding:14px">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--success);margin-bottom:6px">✓ Successfully extracted!</div>'
+      +'<div style="font-size:11px;color:#3B6D11;line-height:1.7">Project: <b>'+data.project_name+'</b><br>'
+      +'<span style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;background:var(--bg);border:.5px solid #97C459;border-radius:20px;padding:3px 10px;font-weight:600">🤖 '+modelName+'</span></div></div>'
+      +'<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:10px">Opening project...</div>';
+    // give user 2.2s to read the model name before opening project
     loadData(false);
     setTimeout(function(){
+      closeUpload();
       var p=DB.projects.find(function(x){return x.project_id===data.project_id;});
       if(!p){p={project_id:data.project_id,project_name:data.project_name,status:'draft',squad:(data.extracted&&data.extracted.project?data.extracted.project.squad:''),color_hex:(data.extracted&&data.extracted.project?data.extracted.project.color_hex:'#534AB7'),go_live:''};}
       loadProjectDoc(p);
-    },1400);
-    toast('✓ '+data.project_name+' extracted!');
+    },2200);
+    toast('✓ Extracted using '+modelName);
   } else {
     rc.innerHTML='<div style="background:var(--danger-bg);border:.5px solid #F09595;border-radius:7px;padding:12px"><div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:3px">⚠ Extraction failed</div><div style="font-size:11px;color:#791F1F">'+(data.error||'Error')+'</div></div>';
   }
