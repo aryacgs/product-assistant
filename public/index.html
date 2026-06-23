@@ -131,6 +131,17 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .foot-s{font-size:10px;color:var(--text2);line-height:1.5}
 .version-bar{text-align:center;padding:4px;font-size:9px;color:var(--text3);background:var(--bg2);border-top:.5px solid var(--border);letter-spacing:.04em}
 
+.ki-section-label{font-size:10px;font-weight:600;color:var(--accent);letter-spacing:.06em;padding:12px 16px 6px;text-transform:uppercase}
+#ki-detail{padding:0 16px 14px}
+.ki-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;font-size:11px;border-bottom:.5px solid var(--border)}
+.ki-kv:last-child{border-bottom:none}
+.ki-kv-k{color:var(--text3);flex-shrink:0}
+.ki-kv-v{color:var(--text);font-weight:500;text-align:right;word-break:break-word}
+.ki-detail-text{font-size:12px;color:var(--text2);line-height:1.7;padding:4px 0}
+.ki-detail-tags{padding:4px 0}
+.ki-detail-tag{display:inline-block;font-size:11px;padding:3px 11px;border-radius:20px;background:var(--bg3);color:var(--text);margin:0 4px 5px 0}
+.ki-detail-empty{font-size:12px;color:var(--text3);font-style:italic;padding:8px 0}
+.ki-detail-note{font-size:11px;color:var(--text2);line-height:1.65;margin-top:10px;padding:10px 12px;background:var(--warn-bg);border-radius:8px}
 /* KNOWLEDGE INSIGHTS — insight cards */
 .ki-card{display:flex;gap:11px;padding:11px 14px;border-bottom:.5px solid var(--border)}
 .ki-card:last-child{border-bottom:none}
@@ -363,8 +374,37 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
         <div id="rp-dd-items"></div>
       </div>
     </div>
-    <!-- Insight cards (filled from selected reference project) -->
-    <div id="ki-content" style="display:none"></div>
+    <!-- 6 feature boxes + detail below -->
+    <div id="ki-content" style="display:none">
+      <div class="ki-feat-grid">
+        <button class="ki-feat" data-tab="similar" onclick="kiTab('similar')">
+          <div class="ki-feat-ic" style="background:var(--info-bg);color:var(--info)">📁</div>
+          <div class="ki-feat-t">Similar Past Projects</div><div class="ki-feat-s">Related work</div>
+        </button>
+        <button class="ki-feat" data-tab="systems" onclick="kiTab('systems')">
+          <div class="ki-feat-ic" style="background:var(--success-bg);color:var(--success)">🖥</div>
+          <div class="ki-feat-t">Affected Systems</div><div class="ki-feat-s">Impacted systems</div>
+        </button>
+        <button class="ki-feat" data-tab="deps" onclick="kiTab('deps')">
+          <div class="ki-feat-ic" style="background:var(--warn-bg);color:var(--warn)">🔗</div>
+          <div class="ki-feat-t">Dependencies</div><div class="ki-feat-s">Required services</div>
+        </button>
+        <button class="ki-feat" data-tab="policies" onclick="kiTab('policies')">
+          <div class="ki-feat-ic" style="background:#F0EAFB;color:#7B3FB0">🛡</div>
+          <div class="ki-feat-t">Policies & Regulations</div><div class="ki-feat-s">Compliance</div>
+        </button>
+        <button class="ki-feat" data-tab="issues" onclick="kiTab('issues')">
+          <div class="ki-feat-ic" style="background:var(--danger-bg);color:var(--danger)">⚠</div>
+          <div class="ki-feat-t">Past Issues / Lessons</div><div class="ki-feat-s">Lessons learned</div>
+        </button>
+        <button class="ki-feat" data-tab="clarify" onclick="kiTab('clarify')">
+          <div class="ki-feat-ic" style="background:#E9F6F9;color:#0E7490">💬</div>
+          <div class="ki-feat-t">Suggested Clarification</div><div class="ki-feat-s">Open questions</div>
+        </button>
+      </div>
+      <div class="ki-section-label" id="ki-section-label">● SIMILAR PAST PROJECTS</div>
+      <div id="ki-detail"></div>
+    </div>
     <div id="ki-empty" class="empty-hint">Select a related project to view insights</div>
     <div class="panel-hdr" style="border-top:.5px solid var(--border)"><span class="num">5</span> Requirement Quality Checker</div>
     <div id="quality-body" style="padding-bottom:10px">
@@ -373,7 +413,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.0.9 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.1.0 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -530,7 +570,7 @@ function filterRPDD(q){renderRPDD(q);}
 function toggleRPDD(){rpddOpen?closeRPDD():openRPDD();}
 function openRPDD(){rpddOpen=true;renderRPDD('');document.getElementById('rp-dd-list').classList.add('show');setTimeout(function(){document.getElementById('rp-search').focus();},50);}
 function closeRPDD(){rpddOpen=false;document.getElementById('rp-dd-list').classList.remove('show');document.getElementById('rp-search').value='';}
-var refProjId=null;
+var refProjId=null, kiTabCur='similar';
 function selectProj(pid){
   var p=DB.projects.find(function(x){return x.project_id===pid;});if(!p)return;
   closeRPDD();
@@ -539,44 +579,41 @@ function selectProj(pid){
   document.getElementById('rp-dot').style.background=p.color_hex||'#888';
   document.getElementById('ki-content').style.display='block';
   document.getElementById('ki-empty').style.display='none';
-  renderRefInsights(pid);
+  kiTab('similar');
 }
-function renderRefInsights(pid){
-  var ins=DB.insights[pid]||{};
-  var box=document.getElementById('ki-content');
+function kiTab(tab){
+  kiTabCur=tab;
+  var cards=document.querySelectorAll('.ki-feat');
+  for(var i=0;i<cards.length;i++){cards[i].classList.toggle('active',cards[i].getAttribute('data-tab')===tab);}
+  var labels={similar:'● SIMILAR PAST PROJECTS',systems:'● AFFECTED SYSTEMS',deps:'● DEPENDENCIES',policies:'● POLICIES & REGULATIONS',issues:'● PAST ISSUES / LESSONS LEARNED',clarify:'● SUGGESTED CLARIFICATION'};
+  document.getElementById('ki-section-label').textContent=labels[tab]||'';
+  renderKiDetail(tab);
+}
+function renderKiDetail(tab){
+  if(!refProjId)return;
+  var ins=DB.insights[refProjId]||{};
+  var detail=document.getElementById('ki-detail');
   function pipe(s){return (s||'').split('|').map(function(x){return x.trim();}).filter(Boolean);}
-  function tags(arr){return arr.map(function(t){return '<span class="ki-tag">'+t+'</span>';}).join('');}
-  function nodata(){return '<div class="ki-d nodata">No data</div>';}
-
-  // Similar Past Projects — from recommendation (other approved projects related to THIS reference)
-  var simName='';
-  if(ins.similar_project_id){
-    var sp=DB.projects.find(function(x){return x.project_id===ins.similar_project_id;});
-    if(sp)simName=sp.project_name;
+  function tagsHtml(arr){return '<div class="ki-detail-tags">'+arr.map(function(t){return '<span class="ki-detail-tag">'+t+'</span>';}).join('')+'</div>';}
+  function empty(){return '<div class="ki-detail-empty">No data available for this project</div>';}
+  var html='';
+  if(tab==='similar'){
+    var names=[];
+    if(ins.similar_project_id){var sp=DB.projects.find(function(x){return x.project_id===ins.similar_project_id;});if(sp)names.push(sp.project_name);}
+    if(curRecommended.length){curRecommended.forEach(function(id){if(id!==refProjId){var sp=DB.projects.find(function(x){return x.project_id===id;});if(sp&&names.indexOf(sp.project_name)===-1)names.push(sp.project_name);}});}
+    html = names.length ? names.map(function(n){return '<div class="ki-kv"><span class="ki-kv-k">Project</span><span class="ki-kv-v">'+n+'</span></div>';}).join('') : empty();
+  } else if(tab==='systems'){
+    var sys=pipe(ins.affected_systems); html = sys.length ? tagsHtml(sys) : empty();
+  } else if(tab==='deps'){
+    var dep=pipe(ins.dependencies); html = dep.length ? tagsHtml(dep) : empty();
+  } else if(tab==='policies'){
+    var pol=pipe(ins.policies); html = pol.length ? tagsHtml(pol) : empty();
+  } else if(tab==='issues'){
+    html = ins.past_issues ? '<div class="ki-detail-text">'+ins.past_issues+'</div>' : empty();
+  } else if(tab==='clarify'){
+    var clar=pipe(ins.clarifications); html = clar.length ? '<div class="ki-detail-text">'+clar.map(function(q){return '• '+q;}).join('<br>')+'</div>' : empty();
   }
-  if(!simName && curRecommended.length){
-    var names=curRecommended.filter(function(id){return id!==pid;}).map(function(id){var sp=DB.projects.find(function(x){return x.project_id===id;});return sp?sp.project_name:'';}).filter(Boolean);
-    simName=names.join(', ');
-  }
-
-  var sys=pipe(ins.affected_systems);
-  var dep=pipe(ins.dependencies);
-  var pol=pipe(ins.policies);
-  var clar=pipe(ins.clarifications);
-
-  var html=''
-  + card('var(--info-bg)','var(--info)','📁','Similar Past Projects','var(--info)', simName?('<div class="ki-d">'+simName+'</div>'):nodata())
-  + card('var(--success-bg)','var(--success)','🖥','Affected Systems','var(--success)', sys.length?('<div class="ki-d">'+tags(sys)+'</div>'):nodata())
-  + card('var(--warn-bg)','var(--warn)','🔗','Dependencies','var(--warn)', dep.length?('<div class="ki-d">'+tags(dep)+'</div>'):nodata())
-  + card('#F0EAFB','#7B3FB0','🛡','Policies & Regulations','#7B3FB0', pol.length?('<div class="ki-d">'+tags(pol)+'</div>'):nodata())
-  + card('var(--danger-bg)','var(--danger)','⚠','Past Issues / Lessons Learned','var(--danger)', ins.past_issues?('<div class="ki-d">'+ins.past_issues+'</div>'):nodata())
-  + card('#E9F6F9','#0E7490','💬','Suggested Clarification','#0E7490', clar.length?('<div class="ki-d">'+clar.map(function(q){return '• '+q;}).join('<br>')+'</div>'):nodata());
-
-  box.innerHTML=html;
-
-  function card(icBg,icColor,icon,title,titleColor,bodyHtml){
-    return '<div class="ki-card"><div class="ki-ic" style="background:'+icBg+';color:'+icColor+'">'+icon+'</div><div class="ki-main"><div class="ki-t" style="color:'+titleColor+'">'+title+'</div>'+bodyHtml+'</div></div>';
-  }
+  detail.innerHTML=html;
 }
 
 function findRelatedProjects(projectName, excludeId, proj, reg, apis){
