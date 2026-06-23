@@ -131,15 +131,25 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .foot-s{font-size:10px;color:var(--text2);line-height:1.5}
 .version-bar{text-align:center;padding:4px;font-size:9px;color:var(--text3);background:var(--bg2);border-top:.5px solid var(--border);letter-spacing:.04em}
 
+/* KNOWLEDGE INSIGHTS — insight cards */
+.ki-card{display:flex;gap:11px;padding:11px 14px;border-bottom:.5px solid var(--border)}
+.ki-card:last-child{border-bottom:none}
+.ki-ic{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.ki-main{flex:1;min-width:0}
+.ki-t{font-size:12px;font-weight:600;margin-bottom:3px}
+.ki-d{font-size:11px;color:var(--text2);line-height:1.55}
+.ki-d.nodata{color:var(--text3);font-style:italic}
+.ki-tag{display:inline-block;font-size:10px;padding:1px 8px;border-radius:20px;background:var(--bg3);color:var(--text2);margin:3px 3px 0 0}
+.ki-link{font-size:11px;color:var(--accent);font-weight:500;margin-top:5px;cursor:pointer;display:inline-block}
+.ki-link:hover{text-decoration:underline}
 /* KNOWLEDGE INSIGHTS — feature tab cards */
-.ki-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 13px}
-.ki-feat{border:.5px solid var(--border);border-radius:8px;padding:9px;background:var(--bg);cursor:pointer;text-align:left;transition:.12s}
+.ki-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px}
+.ki-feat{border:.5px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--bg);cursor:pointer;text-align:left;transition:.12s}
 .ki-feat:hover{background:var(--bg2);border-color:var(--border2)}
 .ki-feat.active{border:1.5px solid var(--accent);background:var(--accent-bg)}
-.ki-feat-ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;margin-bottom:6px}
-.ki-feat-t{font-size:11px;font-weight:600;color:var(--text);line-height:1.2}
-.ki-feat-s{font-size:9px;color:var(--text3);margin-top:2px}
-.ki-section-label{font-size:9px;font-weight:600;color:var(--accent);letter-spacing:.05em;padding:8px 13px 4px}
+.ki-feat-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:9px}
+.ki-feat-t{font-size:12px;font-weight:600;color:var(--text);line-height:1.25}
+.ki-feat-s{font-size:10px;color:var(--text3);margin-top:3px}
 /* REFERENCE PANEL */
 .ref-head{display:flex;align-items:center;gap:8px;padding:9px 13px 6px;background:var(--accent-bg);border-top:.5px solid var(--border)}
 .ref-title{font-size:11px;font-weight:600;color:var(--accent);flex:1}
@@ -150,12 +160,13 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .ref-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .ref-tab:hover{color:var(--text)}
 .ref-body{padding:9px 13px;border-bottom:.5px solid var(--border);background:var(--bg2)}
-.ref-kv{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:11px;border-bottom:.5px solid var(--border)}
+.ref-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;font-size:11px;border-bottom:.5px solid var(--border)}
 .ref-kv:last-child{border-bottom:none}
 .ref-k{color:var(--text3);flex-shrink:0}
-.ref-v{color:var(--text);font-weight:500;text-align:right}
-.ref-empty{font-size:11px;color:var(--text3);font-style:italic;padding:6px 0}
-.ref-api-card{border:.5px solid var(--border);border-radius:6px;padding:7px 9px;margin-bottom:6px;background:var(--bg)}
+.ref-v{color:var(--text);font-weight:500;text-align:right;word-break:break-word}
+.ref-empty{font-size:11px;color:var(--text3);font-style:italic;padding:10px 0}
+.ref-note{font-size:11px;color:var(--text2);line-height:1.65;margin-top:10px;padding:10px 12px;background:var(--warn-bg);border-radius:8px}
+.ref-api-card{border:.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg)}
 .ref-api-name{font-size:11px;font-weight:600;color:var(--text);font-family:var(--mono)}
 .ref-api-meta{font-size:10px;color:var(--text3);margin-top:2px}
 .ref-badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:10px;background:var(--accent-bg);color:var(--accent);margin:2px 2px 0 0}
@@ -352,30 +363,9 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
         <div id="rp-dd-items"></div>
       </div>
     </div>
-    <!-- Feature tab cards (Project Info / Regulation / API / Team) -->
-    <div id="ki-content" style="display:none">
-      <div class="ki-feat-grid">
-        <button class="ki-feat" data-tab="info" onclick="refTab('info')">
-          <div class="ki-feat-ic" style="background:var(--accent-bg);color:var(--accent)">ℹ</div>
-          <div class="ki-feat-t">Project Info</div><div class="ki-feat-s">Mandays, budget</div>
-        </button>
-        <button class="ki-feat" data-tab="reg" onclick="refTab('reg')">
-          <div class="ki-feat-ic" style="background:var(--info-bg);color:var(--info)">🛡</div>
-          <div class="ki-feat-t">Regulation</div><div class="ki-feat-s">Fee, limit</div>
-        </button>
-        <button class="ki-feat" data-tab="api" onclick="refTab('api')">
-          <div class="ki-feat-ic" style="background:#F0EAFB;color:#7B3FB0">⌨</div>
-          <div class="ki-feat-t">API & Schema</div><div class="ki-feat-s">GraphQL, REST</div>
-        </button>
-        <button class="ki-feat" data-tab="team" onclick="refTab('team')">
-          <div class="ki-feat-ic" style="background:var(--success-bg);color:var(--success)">👥</div>
-          <div class="ki-feat-t">Team & Timeline</div><div class="ki-feat-s">Resource, go-live</div>
-        </button>
-      </div>
-      <div class="ki-section-label" id="ki-section-label">● PROJECT INFO</div>
-      <div id="ref-body"></div>
-    </div>
-    <div id="ki-empty" class="empty-hint">Select a related project to view details</div>
+    <!-- Insight cards (filled from selected reference project) -->
+    <div id="ki-content" style="display:none"></div>
+    <div id="ki-empty" class="empty-hint">Select a related project to view insights</div>
     <div class="panel-hdr" style="border-top:.5px solid var(--border)"><span class="num">5</span> Requirement Quality Checker</div>
     <div id="quality-body" style="padding-bottom:10px">
       <div class="empty-hint">Upload a document to see quality scores</div>
@@ -383,7 +373,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.0.7 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.0.9 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -540,7 +530,7 @@ function filterRPDD(q){renderRPDD(q);}
 function toggleRPDD(){rpddOpen?closeRPDD():openRPDD();}
 function openRPDD(){rpddOpen=true;renderRPDD('');document.getElementById('rp-dd-list').classList.add('show');setTimeout(function(){document.getElementById('rp-search').focus();},50);}
 function closeRPDD(){rpddOpen=false;document.getElementById('rp-dd-list').classList.remove('show');document.getElementById('rp-search').value='';}
-var refProjId=null, refTabCur='info';
+var refProjId=null;
 function selectProj(pid){
   var p=DB.projects.find(function(x){return x.project_id===pid;});if(!p)return;
   closeRPDD();
@@ -549,47 +539,46 @@ function selectProj(pid){
   document.getElementById('rp-dot').style.background=p.color_hex||'#888';
   document.getElementById('ki-content').style.display='block';
   document.getElementById('ki-empty').style.display='none';
-  refTab('info');
+  renderRefInsights(pid);
 }
-function refTab(tab){
-  refTabCur=tab;
-  var cards=document.querySelectorAll('.ki-feat');
-  for(var i=0;i<cards.length;i++){cards[i].classList.toggle('active',cards[i].getAttribute('data-tab')===tab);}
-  var labels={info:'● PROJECT INFO',reg:'● REGULATION',api:'● API & SCHEMA',team:'● TEAM & TIMELINE'};
-  document.getElementById('ki-section-label').textContent=labels[tab]||'';
-  renderRefBody();
-}
-function renderRefBody(){
-  if(!refProjId)return;
-  var p=DB.projects.find(function(x){return x.project_id===refProjId;});if(!p)return;
-  var body=document.getElementById('ref-body');
-  function kv(k,v){return v?'<div class="ref-kv"><span class="ref-k">'+k+'</span><span class="ref-v">'+v+'</span></div>':'';}
-  var html='';
-  if(refTabCur==='info'){
-    html=kv('Project',p.project_name)+kv('Squad',p.squad)+kv('Status',p.status)+kv('Go-Live',p.go_live)+kv('Mandays',p.mandays)+kv('Budget',p.budget_idr?'IDR '+Number(p.budget_idr).toLocaleString('en-US'):'')+kv('Resource',p.resource_summary);
-    if(p.note_info)html+='<div style="font-size:11px;color:var(--text2);margin-top:7px;line-height:1.6">💡 '+p.note_info+'</div>';
-  } else if(refTabCur==='reg'){
-    var r=DB.reg[refProjId];
-    if(!r){html='<div class="ref-empty">No regulation data</div>';}
-    else{html=kv('Legal Basis',r.dasar_hukum)+kv('Fee',r.fee_per_trx)+kv('Limit',r.limit_per_trx)+kv('Operating',r.operasional)+kv('Settlement',r.settlement)+kv('Availability',r.availability)+kv('Encryption',r.enkripsi);
-      if(r.badges){html+='<div style="margin-top:6px">'+r.badges.split('|').filter(Boolean).map(function(b){return '<span class="ref-badge">'+b+'</span>';}).join('')+'</div>';}}
-  } else if(refTabCur==='api'){
-    var apis=DB.api[refProjId]||[];
-    if(!apis.length){html='<div class="ref-empty">No API data</div>';}
-    else{html=apis.map(function(a){
-      var badges=(a.badges||'').split('|').filter(Boolean).map(function(b){return '<span class="ref-badge">'+b+'</span>';}).join('');
-      return '<div class="ref-api-card"><div class="ref-api-name">'+a.api_name+'</div><div class="ref-api-meta">'+(a.version||'')+' · '+(a.status||'')+'</div>'+(badges?'<div style="margin-top:4px">'+badges+'</div>':'')+'</div>';
-    }).join('');}
-  } else if(refTabCur==='team'){
-    var teams=DB.team[refProjId]||[];
-    if(!teams.length){html='<div class="ref-empty">No team data</div>';}
-    else{html=teams.map(function(t){return kv((t.role||'')+(t.name&&t.name!=='-'?' ('+t.name+')':''),(t.count||'')+(t.count?' person':''));}).join('');
-      var first=teams[0];if(first){html+=kv('Sprint',first.sprint_duration)+kv('Go-Live',first.go_live);}}
+function renderRefInsights(pid){
+  var ins=DB.insights[pid]||{};
+  var box=document.getElementById('ki-content');
+  function pipe(s){return (s||'').split('|').map(function(x){return x.trim();}).filter(Boolean);}
+  function tags(arr){return arr.map(function(t){return '<span class="ki-tag">'+t+'</span>';}).join('');}
+  function nodata(){return '<div class="ki-d nodata">No data</div>';}
+
+  // Similar Past Projects — from recommendation (other approved projects related to THIS reference)
+  var simName='';
+  if(ins.similar_project_id){
+    var sp=DB.projects.find(function(x){return x.project_id===ins.similar_project_id;});
+    if(sp)simName=sp.project_name;
   }
-  body.innerHTML=html||'<div class="ref-empty">No data</div>';
+  if(!simName && curRecommended.length){
+    var names=curRecommended.filter(function(id){return id!==pid;}).map(function(id){var sp=DB.projects.find(function(x){return x.project_id===id;});return sp?sp.project_name:'';}).filter(Boolean);
+    simName=names.join(', ');
+  }
+
+  var sys=pipe(ins.affected_systems);
+  var dep=pipe(ins.dependencies);
+  var pol=pipe(ins.policies);
+  var clar=pipe(ins.clarifications);
+
+  var html=''
+  + card('var(--info-bg)','var(--info)','📁','Similar Past Projects','var(--info)', simName?('<div class="ki-d">'+simName+'</div>'):nodata())
+  + card('var(--success-bg)','var(--success)','🖥','Affected Systems','var(--success)', sys.length?('<div class="ki-d">'+tags(sys)+'</div>'):nodata())
+  + card('var(--warn-bg)','var(--warn)','🔗','Dependencies','var(--warn)', dep.length?('<div class="ki-d">'+tags(dep)+'</div>'):nodata())
+  + card('#F0EAFB','#7B3FB0','🛡','Policies & Regulations','#7B3FB0', pol.length?('<div class="ki-d">'+tags(pol)+'</div>'):nodata())
+  + card('var(--danger-bg)','var(--danger)','⚠','Past Issues / Lessons Learned','var(--danger)', ins.past_issues?('<div class="ki-d">'+ins.past_issues+'</div>'):nodata())
+  + card('#E9F6F9','#0E7490','💬','Suggested Clarification','#0E7490', clar.length?('<div class="ki-d">'+clar.map(function(q){return '• '+q;}).join('<br>')+'</div>'):nodata());
+
+  box.innerHTML=html;
+
+  function card(icBg,icColor,icon,title,titleColor,bodyHtml){
+    return '<div class="ki-card"><div class="ki-ic" style="background:'+icBg+';color:'+icColor+'">'+icon+'</div><div class="ki-main"><div class="ki-t" style="color:'+titleColor+'">'+title+'</div>'+bodyHtml+'</div></div>';
+  }
 }
 
-// ═══ SMART RECOMMENDATION ═══
 function findRelatedProjects(projectName, excludeId, proj, reg, apis){
   var domains=[
     {n:'transfer',kw:['transfer','bifast','kliring','rtgs','swift','remittance','wire transfer','online transfer']},
