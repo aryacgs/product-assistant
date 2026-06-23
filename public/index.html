@@ -139,7 +139,10 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .ki-kv-v{color:var(--text);font-weight:500;text-align:right;word-break:break-word}
 .ki-detail-text{font-size:12px;color:var(--text2);line-height:1.7;padding:4px 0}
 .ki-detail-tags{padding:4px 0}
-.ki-detail-tag{display:inline-block;font-size:11px;padding:3px 11px;border-radius:20px;background:var(--bg3);color:var(--text);margin:0 4px 5px 0}
+.ki-detail-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 11px;border-radius:20px;background:var(--bg3);color:var(--text);margin:0 4px 5px 0;cursor:pointer;transition:.12s;text-decoration:none}
+.ki-detail-tag:hover{background:var(--accent-bg);color:var(--accent)}
+.ki-detail-tag svg{opacity:.5}
+.ki-detail-tag:hover svg{opacity:1}
 .ki-detail-empty{font-size:12px;color:var(--text3);font-style:italic;padding:8px 0}
 .ki-detail-note{font-size:11px;color:var(--text2);line-height:1.65;margin-top:10px;padding:10px 12px;background:var(--warn-bg);border-radius:8px}
 /* KNOWLEDGE INSIGHTS — insight cards */
@@ -154,13 +157,12 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .ki-link{font-size:11px;color:var(--accent);font-weight:500;margin-top:5px;cursor:pointer;display:inline-block}
 .ki-link:hover{text-decoration:underline}
 /* KNOWLEDGE INSIGHTS — feature tab cards */
-.ki-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px}
-.ki-feat{border:.5px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--bg);cursor:pointer;text-align:left;transition:.12s}
+.ki-feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px}
+.ki-feat{border:.5px solid var(--border);border-radius:8px;padding:8px 9px;background:var(--bg);cursor:pointer;text-align:left;transition:.12s;display:flex;align-items:center;gap:7px;min-width:0}
 .ki-feat:hover{background:var(--bg2);border-color:var(--border2)}
 .ki-feat.active{border:1.5px solid var(--accent);background:var(--accent-bg)}
-.ki-feat-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:9px}
-.ki-feat-t{font-size:12px;font-weight:600;color:var(--text);line-height:1.25}
-.ki-feat-s{font-size:10px;color:var(--text3);margin-top:3px}
+.ki-feat-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ki-feat-t{font-size:11px;font-weight:600;color:var(--text);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* REFERENCE PANEL */
 .ref-head{display:flex;align-items:center;gap:8px;padding:9px 13px 6px;background:var(--accent-bg);border-top:.5px solid var(--border)}
 .ref-title{font-size:11px;font-weight:600;color:var(--accent);flex:1}
@@ -257,8 +259,32 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
 .rp-dd-item{display:flex;align-items:center;gap:8px;padding:9px 11px;font-size:12px;color:var(--text2);cursor:pointer}
 .rp-dd-item:hover{background:var(--bg2)}
 
-@media(max-width:1100px){.layout{grid-template-columns:0 1fr 280px}.left{display:none}}
-@media(max-width:760px){.layout{grid-template-columns:1fr}.right{display:none}.footer{grid-template-columns:1fr}}
+/* Tablet: hide left sidebar (accessible via menu), keep right panel */
+@media(max-width:1100px){
+  .layout{grid-template-columns:0 1fr 270px}
+  .left{display:none}
+}
+/* Mobile: stack everything vertically, scrollable */
+@media(max-width:760px){
+  html,body{overflow:auto;height:auto}
+  body{height:auto;min-height:100vh}
+  .layout{display:flex;flex-direction:column;overflow:visible;height:auto}
+  .left{display:none}
+  .center{order:1;min-height:60vh}
+  .c-body{max-height:none}
+  .right{order:2;border-left:none;border-top:.5px solid var(--border);max-height:none;overflow:visible}
+  .footer{grid-template-columns:1fr}
+  .topbar{position:sticky;top:0}
+  .ki-feat-grid{grid-template-columns:1fr 1fr 1fr}
+  .doc-canvas{max-width:100%}
+  .c-body{padding:16px}
+}
+/* Small phone: 2-col insight boxes, tighter */
+@media(max-width:420px){
+  .ki-feat-grid{grid-template-columns:1fr 1fr}
+  .tb-sub{display:none}
+  .tb-btn span{display:none}
+}
 </style>
 </head>
 <body>
@@ -379,27 +405,27 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
       <div class="ki-feat-grid">
         <button class="ki-feat" data-tab="similar" onclick="kiTab('similar')">
           <div class="ki-feat-ic" style="background:var(--info-bg);color:var(--info)">📁</div>
-          <div class="ki-feat-t">Similar Past Projects</div><div class="ki-feat-s">Related work</div>
+          <div class="ki-feat-t">Similar Projects</div>
         </button>
         <button class="ki-feat" data-tab="systems" onclick="kiTab('systems')">
           <div class="ki-feat-ic" style="background:var(--success-bg);color:var(--success)">🖥</div>
-          <div class="ki-feat-t">Affected Systems</div><div class="ki-feat-s">Impacted systems</div>
+          <div class="ki-feat-t">Affected Systems</div>
         </button>
         <button class="ki-feat" data-tab="deps" onclick="kiTab('deps')">
           <div class="ki-feat-ic" style="background:var(--warn-bg);color:var(--warn)">🔗</div>
-          <div class="ki-feat-t">Dependencies</div><div class="ki-feat-s">Required services</div>
+          <div class="ki-feat-t">Dependencies</div>
         </button>
         <button class="ki-feat" data-tab="policies" onclick="kiTab('policies')">
           <div class="ki-feat-ic" style="background:#F0EAFB;color:#7B3FB0">🛡</div>
-          <div class="ki-feat-t">Policies & Regulations</div><div class="ki-feat-s">Compliance</div>
+          <div class="ki-feat-t">Policies & Reg.</div>
         </button>
         <button class="ki-feat" data-tab="issues" onclick="kiTab('issues')">
           <div class="ki-feat-ic" style="background:var(--danger-bg);color:var(--danger)">⚠</div>
-          <div class="ki-feat-t">Past Issues / Lessons</div><div class="ki-feat-s">Lessons learned</div>
+          <div class="ki-feat-t">Past Issues</div>
         </button>
         <button class="ki-feat" data-tab="clarify" onclick="kiTab('clarify')">
           <div class="ki-feat-ic" style="background:#E9F6F9;color:#0E7490">💬</div>
-          <div class="ki-feat-t">Suggested Clarification</div><div class="ki-feat-s">Open questions</div>
+          <div class="ki-feat-t">Clarification</div>
         </button>
       </div>
       <div class="ki-section-label" id="ki-section-label">● SIMILAR PAST PROJECTS</div>
@@ -413,7 +439,7 @@ body{background:var(--bg3);display:flex;flex-direction:column;font-size:13px;col
   </div>
 </div>
 
-<div class="version-bar">ProdDev Assistant · v2.1.0 · Solution Ideation Journey: Iteration 3 · © 2026</div>
+<div class="version-bar">ProdDev Assistant · v2.1.1 · Solution Ideation Journey: Iteration 3 · © 2026</div>
 
 <!-- UPLOAD MODAL -->
 <div class="modal-bg" id="upload-bg" onclick="if(event.target===this)closeUpload()">
@@ -593,15 +619,17 @@ function renderKiDetail(tab){
   if(!refProjId)return;
   var ins=DB.insights[refProjId]||{};
   var detail=document.getElementById('ki-detail');
+  function gurl(term){return 'https://www.google.com/search?q='+encodeURIComponent(term);}
   function pipe(s){return (s||'').split('|').map(function(x){return x.trim();}).filter(Boolean);}
-  function tagsHtml(arr){return '<div class="ki-detail-tags">'+arr.map(function(t){return '<span class="ki-detail-tag">'+t+'</span>';}).join('')+'</div>';}
+  function gicon(){return '<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M4.5 2h5.5v5.5M10 2L5 7M8 7.5v2a.5.5 0 01-.5.5h-5a.5.5 0 01-.5-.5v-5a.5.5 0 01.5-.5h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+  function tagsHtml(arr){return '<div class="ki-detail-tags">'+arr.map(function(t){return '<a class="ki-detail-tag" href="'+gurl(t)+'" target="_blank" rel="noopener noreferrer">'+t+gicon()+'</a>';}).join('')+'</div>';}
   function empty(){return '<div class="ki-detail-empty">No data available for this project</div>';}
   var html='';
   if(tab==='similar'){
     var names=[];
     if(ins.similar_project_id){var sp=DB.projects.find(function(x){return x.project_id===ins.similar_project_id;});if(sp)names.push(sp.project_name);}
     if(curRecommended.length){curRecommended.forEach(function(id){if(id!==refProjId){var sp=DB.projects.find(function(x){return x.project_id===id;});if(sp&&names.indexOf(sp.project_name)===-1)names.push(sp.project_name);}});}
-    html = names.length ? names.map(function(n){return '<div class="ki-kv"><span class="ki-kv-k">Project</span><span class="ki-kv-v">'+n+'</span></div>';}).join('') : empty();
+    html = names.length ? names.map(function(n){return '<div class="ki-kv"><span class="ki-kv-k">Project</span><a class="ki-kv-v" href="'+gurl(n)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;cursor:pointer">'+n+' ↗</a></div>';}).join('') : empty();
   } else if(tab==='systems'){
     var sys=pipe(ins.affected_systems); html = sys.length ? tagsHtml(sys) : empty();
   } else if(tab==='deps'){
