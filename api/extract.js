@@ -6,7 +6,7 @@ export const config = { maxDuration: 60 };
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 const OR_KEY       = process.env.OPENROUTER_API_KEY;
-const AI_MODELS_RAW = process.env.AI_MODEL || 'nvidia/nemotron-super-49b-v1:free|openai/gpt-oss-120b:free|openai/gpt-oss-20b:free|google/gemma-3-12b-it:free';
+const AI_MODELS_RAW = process.env.AI_MODEL || 'openai/gpt-oss-20b:free|google/gemma-3-12b-it:free|openai/gpt-oss-120b:free|nvidia/nemotron-super-49b-v1:free';
 const ALL_MODELS = AI_MODELS_RAW.split('|').map(m => m.trim()).filter(Boolean);
 
 const PROMPT = `You are an AI assistant for a Product Development team at an Indonesian bank.
@@ -132,27 +132,36 @@ export default async function handler(req, res) {
 
     let rawText = '', modelUsed = '', lastError = '';
 
-    // Try models with auto-fallback
-    for (const model of ALL_MODELS) {
+    // Try models with auto-fallback (cap at 3 to stay within 60s function limit)
+    const modelsToTry = ALL_MODELS.slice(0, 3);
+    for (const model of modelsToTry) {
       try {
-        const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OR_KEY}`,
-            'HTTP-Referer': 'https://proddev-assistant.vercel.app',
-            'X-Title': 'ProdDev Assistant',
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: 'You extract structured data from documents into JSON. Reply ONLY with valid JSON, no markdown or explanation.' },
-              { role: 'user', content: PROMPT + text.substring(0, 12000) }
-            ],
-            temperature: 0.2,
-            max_tokens: 4000,
-          })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000); // 22s per model
+        let aiRes;
+        try {
+          aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${OR_KEY}`,
+              'HTTP-Referer': 'https://proddev-assistant.vercel.app',
+              'X-Title': 'ProdDev Assistant',
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: 'You extract structured data from documents into JSON. Reply ONLY with valid JSON, no markdown or explanation.' },
+                { role: 'user', content: PROMPT + text.substring(0, 9000) }
+              ],
+              temperature: 0.2,
+              max_tokens: 3500,
+            })
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (aiRes.status === 429 || aiRes.status === 404) {
           lastError = `${model} → ${aiRes.status}`;
@@ -171,7 +180,7 @@ export default async function handler(req, res) {
         modelUsed = model;
         break;
       } catch (e) {
-        lastError = `${model} → ${e.message}`;
+        lastError = e.name === 'AbortError' ? `${model} → timeout (18s)` : `${model} → ${e.message}`;
         continue;
       }
     }
